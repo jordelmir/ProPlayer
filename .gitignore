@@ -1,0 +1,83 @@
+# ==============================================================================
+# PROPLAYER - EXHAUSTIVE SECURITY & ENVIRONMENT GITIGNORE
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Environment Variables & Secrets
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.cert.pem
+# Evitar subir llaves privadas de Apple Developer
+AuthKey_*.p8
+*.mobileprovision
+*.developerprofile
+
+# ------------------------------------------------------------------------------
+# 2. Swift Package Manager (SPM)
+# ------------------------------------------------------------------------------
+.build/
+Packages/
+Package.pins
+Package.resolved
+*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+
+# ------------------------------------------------------------------------------
+# 3. Xcode & Build Artifacts
+# ------------------------------------------------------------------------------
+build/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# ------------------------------------------------------------------------------
+# 4. macOS & OS Generated Files
+# ------------------------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+*.app
+*.zip
+
+# ------------------------------------------------------------------------------
+# 5. Logs & Databases
+# ------------------------------------------------------------------------------
+*.log
+*.sqlite
+*.sqlite3
+*.db
+# (Si la app usa CoreData para la librería en un futuro)
+*.storedata
+
+# ------------------------------------------------------------------------------
+# 6. UI & Design Files (Optional - depends on workflow)
+# ------------------------------------------------------------------------------
+*.sketch
+*.fig
+*.psd
