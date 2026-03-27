@@ -60,14 +60,6 @@ public enum PlayerError: Error, Identifiable, Equatable, Sendable {
     }
 }
 
-// MARK: - Custom Video Render Pipeline Integration
-extension PlayerEngine: VideoDisplayLinkDelegate {
-    public func displayLink(didFireWithHostTime hostTime: CFTimeInterval) {
-        // Intercept exactly on monitor refresh via callback mapping
-        frameExtractor.extractFrame(forHostTime: hostTime)
-    }
-}
-
 // MARK: - Buffer Policy
 
 struct BufferPolicy {
@@ -90,7 +82,7 @@ public struct PlaybackMetrics: Sendable {
 // MARK: - OTT Platform-Grade Engine
 
 @MainActor
-public final class PlayerEngine: NSObject, ObservableObject, AVPictureInPictureControllerDelegate {
+public final class PlayerEngine: NSObject, ObservableObject, @unchecked Sendable, VideoDisplayLinkDelegate, AVPictureInPictureControllerDelegate {
 
     // MARK: - State Machine (Single Source of Truth)
     @Published public private(set) var state: PlaybackState = .idle
@@ -108,6 +100,12 @@ public final class PlayerEngine: NSObject, ObservableObject, AVPictureInPictureC
     @Published public var videoSize: CGSize = .zero
     @Published public var currentItemTitle: String = ""
     @Published public var error: PlayerError?
+
+    // Performance Telemetry (v7.2)
+    @Published public private(set) var currentFPS: Double = 0
+    @Published public private(set) var frameDropCount: Int = 0
+    @Published public private(set) var frameJitter: Double = 0
+    private var lastFrameTimestamp: CFTimeInterval = 0
 
     // A-B Loop
     @Published public var loopA: Double?
@@ -170,11 +168,11 @@ public final class PlayerEngine: NSObject, ObservableObject, AVPictureInPictureC
 
     // MARK: - Init and Lifecycle
 
-    public init(driver: PlayerDriver? = nil) {
-        self.driver = driver ?? AVPlayerDriver()
+    public init(driver: PlayerDriver = AVPlayerDriver()) {
+        self.driver = driver
         super.init()
         self.driver.player.volume = volume
-        setupTimeObserver()
+        setupObservers() // Renamed from setupTimeObserver
         setupSystemObservers()
         displayLink.setDelegate(self)
     }
@@ -533,6 +531,13 @@ public final class PlayerEngine: NSObject, ObservableObject, AVPictureInPictureC
 
     // MARK: - Time Monitoring (coalesced)
 
+    // MARK: - Observers
+    
+    private func setupObservers() {
+        setupTimeObserver()
+        setupPiPPossibleObserver()
+    }
+
     private func setupTimeObserver() {
         let interval = CMTime(seconds: 0.1, preferredTimescale: 600)
         timeObserver = driver.addPeriodicTimeObserver(interval: interval, queue: .main) { [weak self] time in
@@ -585,6 +590,10 @@ public final class PlayerEngine: NSObject, ObservableObject, AVPictureInPictureC
                 }
             }
         }
+    }
+
+    private func setupPiPPossibleObserver() {
+        isPiPPossible = AVPictureInPictureController.isPictureInPictureSupported()
     }
 
     // MARK: - Tracks
@@ -719,5 +728,22 @@ public final class PlayerEngine: NSObject, ObservableObject, AVPictureInPictureC
     }
     private func endPlaybackActivity() {
         if let a = playbackActivity { ProcessInfo.processInfo.endActivity(a); playbackActivity = nil }
+    }
+    
+    // MARK: - VideoDisplayLinkDelegate
+    
+    public func displayLink(didFireWithHostTime hostTime: CFTimeInterval) {
+        // Calculate metrics before extraction
+        if lastFrameTimestamp > 0 {
+            let delta = hostTime - lastFrameTimestamp
+            currentFPS = 1.0 / delta
+            frameJitter = abs(delta - (1.0 / 60.0)) // Assuming 60Hz baseline (ProMotion handles this naturally)
+        }
+        lastFrameTimestamp = hostTime
+        
+        let success = frameExtractor.extractFrame(forHostTime: hostTime)
+        if !success {
+            frameDropCount += 1
+        }
     }
 }

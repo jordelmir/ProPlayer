@@ -50,9 +50,9 @@ public final class MetalVideoRenderer: NSObject, MTKViewDelegate, ObservableObje
     }
     
     private func setupPipeline() {
-        let bundle = Bundle(for: type(of: self))
+        let bundle = Bundle.module
         guard let library = try? device.makeDefaultLibrary(bundle: bundle) else {
-            print("[MetalVideoRenderer] Warning: Could not find Shaders.metal in bundle. Using fallback or blank.")
+            print("[MetalVideoRenderer] Warning: Could not find Shaders.metal in Bundle.module. Using fallback.")
             return
         }
         

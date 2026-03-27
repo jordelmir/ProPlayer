@@ -111,37 +111,13 @@ struct PlayerView: View {
 
     @ViewBuilder
     private var videoContent: some View {
-        switch viewModel.gravityMode {
-        case .fit, .fill, .stretch:
-            VideoLayerView(
-                player: viewModel.engine.player,
-                videoGravity: viewModel.gravityMode.avGravity,
-                onLayerReady: { layer in
-                    viewModel.setupPiP(with: layer)
-                }
-            )
-
-        case .smartFill:
-            SmartFillVideoView(
-                player: viewModel.engine.player,
-                videoSize: viewModel.engine.videoSize,
-                onLayerReady: { layer in
-                    viewModel.setupPiP(with: layer)
-                }
-            )
-
-        case .customZoom:
-            VideoLayerView(
-                player: viewModel.engine.player,
-                videoGravity: .resizeAspect,
-                onLayerReady: { layer in
-                    viewModel.setupPiP(with: layer)
-                }
-            )
-            .scaleEffect(viewModel.customZoomScale)
-            .offset(viewModel.customZoomOffset)
-            .animation(ProTheme.Animations.standard, value: viewModel.customZoomScale)
-        }
+        MetalPlayerView(engine: viewModel.engine)
+            .ignoresSafeArea()
+            // Custom zoom/scaling is now handled by the Metal renderer's projection matrix (todo)
+            // or by SwiftUI scale effect for now.
+            .scaleEffect(viewModel.gravityMode == .customZoom ? viewModel.customZoomScale : 1.0)
+            .offset(viewModel.gravityMode == .customZoom ? viewModel.customZoomOffset : .zero)
+            .animation(ProTheme.Animations.standard, value: viewModel.gravityMode)
     }
 
     // MARK: - Context Menu

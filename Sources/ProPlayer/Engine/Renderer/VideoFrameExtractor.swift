@@ -44,19 +44,20 @@ public final class VideoFrameExtractor: ObservableObject {
     
     /// Queries the video output for the closest frame matching the hardware presentation time.
     /// Call this inside the displayLink vsync callback.
-    public func extractFrame(forHostTime hostTime: CFTimeInterval) {
-        guard let output = videoOutput else { return }
+    @discardableResult
+    public func extractFrame(forHostTime hostTime: CFTimeInterval) -> Bool {
+        guard let output = videoOutput else { return false }
         
-        // Convert the host display time to the item's internal media time clock
         let itemTime = output.itemTime(forHostTime: hostTime)
-        guard itemTime.isValid && itemTime.isNumeric else { return }
+        guard itemTime.isValid && itemTime.isNumeric else { return false }
         
         if output.hasNewPixelBuffer(forItemTime: itemTime) {
             var presentationTime = CMTime.zero
             if let pixelBuffer = output.copyPixelBuffer(forItemTime: itemTime, itemTimeForDisplay: &presentationTime) {
-                // Publish new frame to the UI / Shader Pipeline
                 self.currentPixelBuffer = pixelBuffer
+                return true
             }
         }
+        return false
     }
 }

@@ -15,7 +15,9 @@ let package = Package(
         .target(
             name: "ProPlayerEngine",
             path: "Sources/ProPlayer/Engine",
-            exclude: ["Renderer/Shaders.metal"],
+            resources: [
+                .process("Renderer/Shaders.metal")
+            ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency")
             ]
