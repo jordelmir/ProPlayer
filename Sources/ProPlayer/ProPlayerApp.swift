@@ -9,8 +9,7 @@ struct ProPlayerApp: App {
             MainView()
                 .frame(minWidth: 900, minHeight: 550)
         }
-        .windowStyle(.titleBar)
-        .windowToolbarStyle(.unified(showsTitle: true))
+        .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1200, height: 750)
         .commands {
             // File menu

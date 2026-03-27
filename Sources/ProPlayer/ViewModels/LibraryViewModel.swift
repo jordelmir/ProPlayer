@@ -21,6 +21,7 @@ final class LibraryViewModel: ObservableObject {
 
         loadLibrary()
         setupSearch()
+        scanStandardDirectories()
     }
 
     private func setupSearch() {
@@ -89,7 +90,7 @@ final class LibraryViewModel: ObservableObject {
             }
 
             var videoURLs: [URL] = []
-            for case let fileURL as URL in enumerator {
+            while let fileURL = enumerator.nextObject() as? URL {
                 if VideoItem.isVideoFile(fileURL) {
                     videoURLs.append(fileURL)
                 }
@@ -186,6 +187,57 @@ final class LibraryViewModel: ObservableObject {
             videos = try JSONDecoder().decode([VideoItem].self, from: data)
         } catch {
             // Handle load error silently
+        }
+    }
+
+    // MARK: - Auto-Scan
+
+    private func scanStandardDirectories() {
+        Task {
+            isScanning = true
+            
+            // Pass the URLs as strings or URLs (Sendable) to the detached task
+            let fileManager = FileManager.default
+            let homeURL = fileManager.homeDirectoryForCurrentUser
+            let dirsToScan = [
+                homeURL.appendingPathComponent("Movies"),
+                homeURL.appendingPathComponent("Downloads"),
+                homeURL.appendingPathComponent("Desktop")
+            ]
+            
+            let discoveredURLs: [URL] = await Task.detached {
+                let fm = FileManager.default
+                var localURLs: [URL] = []
+                
+                for dir in dirsToScan {
+                    guard let enumerator = fm.enumerator(
+                        at: dir,
+                        includingPropertiesForKeys: [.isRegularFileKey],
+                        options: [.skipsHiddenFiles, .skipsPackageDescendants]
+                    ) else { continue }
+                    
+                    while let fileURL = enumerator.nextObject() as? URL {
+                        if VideoItem.isVideoFile(fileURL) {
+                            localURLs.append(fileURL)
+                        }
+                    }
+                }
+                return localURLs
+            }.value
+            
+            // Filter out already known videos
+            let existingURLs = Set(videos.map { $0.url })
+            let newURLs = discoveredURLs.filter { !existingURLs.contains($0) }
+            
+            if !newURLs.isEmpty {
+                for url in newURLs {
+                    let item = await VideoMetadataExtractor.extractMetadata(from: url)
+                    videos.append(item)
+                }
+                saveLibrary()
+                applyFiltersAndSort(searchText: searchText, sort: sortOption, source: videos)
+            }
+            isScanning = false
         }
     }
 }
