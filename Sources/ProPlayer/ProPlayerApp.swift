@@ -10,7 +10,6 @@ struct ElysiumVanguardApp: App {
             MainView()
                 .frame(minWidth: 900, minHeight: 550)
         }
-        .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1200, height: 750)
         .commands {
             // File menu
