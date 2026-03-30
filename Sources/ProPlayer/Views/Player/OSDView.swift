@@ -53,7 +53,7 @@ struct VideoInfoOverlay: View {
             }
             .padding(.top, 4)
             
-            infoRow("Engine", "Metal (M1 Native)")
+            infoRow("Engine", "Elysium Metal v14.0")
             infoRow("HDR/10-bit", "Adaptive Dither")
             
             let tier = engine.renderer.renderingTier

@@ -7,7 +7,7 @@ enum ProLogger {
     
     // MARK: - Subsystems
     
-    private static let subsystem = Bundle.main.bundleIdentifier ?? "com.elysium.proplayer"
+    private static let subsystem = Bundle.main.bundleIdentifier ?? "com.jordelmir.ElysiumVanguardProPlayer8K"
     
     static let engine = OSLog(subsystem: subsystem, category: "Engine")
     static let ui = OSLog(subsystem: subsystem, category: "UI")

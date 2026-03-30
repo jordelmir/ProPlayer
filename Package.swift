@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "ProPlayer",
+    name: "ElysiumVanguardProPlayer8K",
     platforms: [
         .macOS(.v14)
     ],

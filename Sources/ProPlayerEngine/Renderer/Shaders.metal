@@ -2,7 +2,7 @@
 using namespace metal;
 
 // ============================================================
-// ProPlayer Elite v13.0 — Studio-Grade Metal Pipeline
+// Elysium Vanguard Pro Player 8K v14.0 — Studio-Grade Metal Pipeline
 // Features: Lanczos-3, ACES HDR, TNR, Film Grain, Color Temp
 // ============================================================
 

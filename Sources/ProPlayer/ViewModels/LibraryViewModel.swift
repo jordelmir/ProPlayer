@@ -17,7 +17,7 @@ final class LibraryViewModel: ObservableObject {
 
     init() {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        libraryURL = appSupport.appendingPathComponent("ProPlayer", isDirectory: true)
+        libraryURL = appSupport.appendingPathComponent("ElysiumVanguardProPlayer8K", isDirectory: true)
         try? FileManager.default.createDirectory(at: libraryURL, withIntermediateDirectories: true)
 
         loadLibrary()

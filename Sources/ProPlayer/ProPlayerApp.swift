@@ -3,7 +3,7 @@ import UniformTypeIdentifiers
 import ProPlayerEngine
 
 @main
-struct ElysiumVanguardApp: App {
+struct ProPlayerEliteApp: App {
 
     var body: some Scene {
         WindowGroup {

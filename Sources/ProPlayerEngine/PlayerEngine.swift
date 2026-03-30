@@ -689,7 +689,7 @@ public final class PlayerEngine: NSObject, ObservableObject, PlayerEngineProtoco
                 let (image, _) = try await generator.image(at: time)
                 let nsImage = NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
                 let path = savePath?.path ?? NSTemporaryDirectory()
-                let fileName = "ProPlayer_\(Int(Date().timeIntervalSince1970)).png"
+                let fileName = "EVP8K_\(Int(Date().timeIntervalSince1970)).png"
                 let fullPath = (path as NSString).appendingPathComponent(fileName)
                 if let tiff = nsImage.tiffRepresentation,
                    let rep = NSBitmapImageRep(data: tiff),
@@ -748,7 +748,7 @@ public final class PlayerEngine: NSObject, ObservableObject, PlayerEngineProtoco
     // MARK: - Activities
     private func startPlaybackActivity() {
         if playbackActivity == nil {
-            playbackActivity = ProcessInfo.processInfo.beginActivity(options: .idleDisplaySleepDisabled, reason: "ProPlayer Playback")
+            playbackActivity = ProcessInfo.processInfo.beginActivity(options: .idleDisplaySleepDisabled, reason: "Elysium Vanguard Pro Player 8K Playback")
         }
     }
     private func endPlaybackActivity() {

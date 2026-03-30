@@ -36,7 +36,7 @@ struct LibraryView: View {
             Section {
                 HStack(spacing: 12) {
                     BreathingLogoView(size: 28, glowRadius: 8)
-                    Text("ELYSIUM")
+                    Text("ELYSIUM 8K")
                         .font(ProTheme.Fonts.headline)
                         .tracking(2)
                         .foregroundColor(Color(red: 0.1, green: 0.9, blue: 1.0))

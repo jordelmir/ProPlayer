@@ -24,7 +24,7 @@ struct SettingsView: View {
                     .tint(ProTheme.Colors.accentBlue)
                 }
             }
-            .navigationTitle("Elite Engine Settings")
+            .navigationTitle("Elysium Vanguard 8K — Engine Settings")
         }
         .preferredColorScheme(.dark)
         .tint(ProTheme.Colors.accentBlue)

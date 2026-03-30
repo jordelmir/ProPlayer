@@ -5,25 +5,27 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleExecutable</key>
-    <string>ElysiumVanguardProPlayer</string>
+    <string>ElysiumVanguardProPlayer8K</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
-    <string>com.jordelmir.ProPlayer</string>
+    <string>com.jordelmir.ElysiumVanguardProPlayer8K</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>Elysium Vanguard Pro Player</string>
+    <string>Elysium Vanguard Pro Player 8K</string>
     <key>CFBundleDisplayName</key>
-    <string>Elysium Vanguard Pro Player</string>
+    <string>Elysium Vanguard Pro Player 8K</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>13.0</string>
+    <string>14.0</string>
     <key>CFBundleVersion</key>
-    <string>13.0</string>
+    <string>14.0</string>
     <key>LSMinimumSystemVersion</key>
     <string>12.0</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.entertainment</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSPrincipalClass</key>

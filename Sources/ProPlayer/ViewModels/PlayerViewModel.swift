@@ -100,7 +100,7 @@ final class PlayerViewModel: ObservableObject {
         engine.loadFile(url: url)
         engine.play()
         
-        showOSD("En vivo: \(url.deletingPathExtension().lastPathComponent)")
+        showOSD("Now Playing: \(url.deletingPathExtension().lastPathComponent)")
         resetControlsTimer()
         
         // Force an immediate UI refresh for the player

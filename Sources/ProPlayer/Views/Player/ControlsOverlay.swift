@@ -29,7 +29,7 @@ struct ControlsOverlay: View {
 
             // Title
             VStack(alignment: .leading, spacing: 2) {
-                Text(viewModel.engine.currentItemTitle.isEmpty ? "Elysium Vanguard" : viewModel.engine.currentItemTitle)
+                Text(viewModel.engine.currentItemTitle.isEmpty ? "Elysium Vanguard Pro Player 8K" : viewModel.engine.currentItemTitle)
                     .font(ProTheme.Fonts.headline)
                     .foregroundColor(ProTheme.Colors.textPrimary)
                     .lineLimit(1)
