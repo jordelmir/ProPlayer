@@ -1,6 +1,5 @@
 import SwiftUI
 import ProPlayerEngine
-import ProPlayerEngine
 
 struct ControlsOverlay: View {
     @ObservedObject var viewModel: PlayerViewModel
@@ -165,15 +164,23 @@ struct ControlsOverlay: View {
                             Button {
                                 viewModel.setRenderingTier(tier)
                             } label: {
-                                Text(tier.shortLabel)
-                                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                                    .foregroundColor(viewModel.currentRenderingTier == tier ? .white : ProTheme.Colors.textSecondary)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 6)
-                                            .fill(viewModel.currentRenderingTier == tier ? ProTheme.Colors.accentBlue : Color.white.opacity(0.08))
-                                    )
+                                HStack(spacing: 4) {
+                                    Image(systemName: tier.icon)
+                                        .font(.system(size: 8))
+                                    Text(tier.shortLabel)
+                                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                                }
+                                .foregroundColor(viewModel.currentRenderingTier == tier ? .white : ProTheme.Colors.textSecondary)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(viewModel.currentRenderingTier == tier ? ProTheme.Colors.accentBlue : Color.white.opacity(0.08))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(viewModel.currentRenderingTier == tier ? Color.white.opacity(0.3) : Color.clear, lineWidth: 1)
+                                )
                             }
                             .buttonStyle(.plain)
                         }

@@ -76,6 +76,19 @@ struct MainView: View {
                 .help("Settings")
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .proPlayerOpenFiles)) { notification in
+            guard let urls = notification.object as? [URL] else { return }
+            if urls.count == 1 {
+                playVideo(url: urls[0])
+            } else {
+                libraryVM.addVideoFiles(urls)
+                playerVM.openFiles(urls: urls)
+                Task { @MainActor in
+                    WindowController.enterImmersiveFullScreen()
+                    withAnimation { currentView = .player }
+                }
+            }
+        }
     }
 
     private func playVideo(url: URL) {

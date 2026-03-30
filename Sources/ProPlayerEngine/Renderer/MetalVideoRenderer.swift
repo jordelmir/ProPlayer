@@ -14,15 +14,30 @@ public final class MetalVideoRenderer: NSObject, MTKViewDelegate {
         var offset: simd_float2
         var time: simd_float1
         var matrixIntensity: simd_float1
+        var colorMatrixType: simd_uint1
+        
+        // Advanced Rendering (v13.0)
+        var colorTemperature: simd_float1
+        var filmGrainIntensity: simd_float1
+        var enableToneMapping: simd_uint1
+        var enableTNR: simd_uint1
     }
     
     private let startTime = Date()
     
     // Settings Reference
-    public var gravityMode: VideoGravityMode = .fill
-    public var renderingTier: SuperResolutionTier = .upscale4k
-    public var ambientIntensity: Double = 0.4
-    public var matrixIntensity: Double = 0.0
+    public var gravityMode: VideoGravityMode = .fill { didSet { mtkView.setNeedsDisplay(mtkView.bounds) } }
+    public var renderingTier: SuperResolutionTier = .upscale4k { didSet { mtkView.setNeedsDisplay(mtkView.bounds) } }
+    public var ambientIntensity: Double = 0.4 { didSet { mtkView.setNeedsDisplay(mtkView.bounds) } }
+    public var matrixIntensity: Double = 0.0 { didSet { mtkView.setNeedsDisplay(mtkView.bounds) } }
+    public var colorTemperature: Float = 6500.0 { didSet { mtkView.setNeedsDisplay(mtkView.bounds) } }
+    public var filmGrainIntensity: Float = 0.0 { didSet { mtkView.setNeedsDisplay(mtkView.bounds) } }
+    public var enableToneMapping: Bool = false { didSet { mtkView.setNeedsDisplay(mtkView.bounds) } }
+    public var enableTNR: Bool = false { didSet { mtkView.setNeedsDisplay(mtkView.bounds) } }
+    
+    // Core Rendering State
+    private var previousTexture: MTLTexture?
+    
     public var currentPixelBuffer: CVPixelBuffer? {
         didSet {
             // Trigger a redraw whenever we get a new frame
@@ -131,19 +146,34 @@ public final class MetalVideoRenderer: NSObject, MTKViewDelegate {
         guard let pixelBuffer = currentPixelBuffer,
               let drawable = view.currentDrawable,
               let renderPassDescriptor = view.currentRenderPassDescriptor,
-              let pipeline = renderPipelineState else { return }
+              let commandBuffer = commandQueue.makeCommandBuffer(),
+              let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor),
+              let pipelineState = renderPipelineState else {
+            return
+        }
         
-        let texture = createTexture(from: pixelBuffer)
+        // Create BGRA texture from pixel buffer (single plane)
+        guard let videoTexture = createBGRATexture(from: pixelBuffer) else {
+            renderEncoder.endEncoding()
+            return
+        }
         
-        guard let commandBuffer = commandQueue.makeCommandBuffer(),
-              let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else { return }
+        renderEncoder.setRenderPipelineState(pipelineState)
+        renderEncoder.setFragmentTexture(videoTexture, index: 0)
         
-        renderEncoder.setRenderPipelineState(pipeline)
-        renderEncoder.setFragmentTexture(texture, index: 0)
+        // Provide previous texture for TNR (fallback to current if nil)
+        renderEncoder.setFragmentTexture(previousTexture ?? videoTexture, index: 1)
         
         var uniforms = calculateUniforms(pixelBuffer: pixelBuffer)
         
-        // Pass uniforms to BOTH vertex and fragment shaders
+        // Geometry Engine viewport
+        let viewport = VideoGeometryEngine.calculateViewport(
+            viewSize: mtkView.drawableSize,
+            videoSize: CGSize(width: CGFloat(CVPixelBufferGetWidth(pixelBuffer)), height: CGFloat(CVPixelBufferGetHeight(pixelBuffer))),
+            gravity: gravityMode
+        )
+        renderEncoder.setViewport(viewport)
+        
         renderEncoder.setVertexBytes(&uniforms, length: MemoryLayout<Uniforms>.stride, index: 0)
         renderEncoder.setFragmentBytes(&uniforms, length: MemoryLayout<Uniforms>.stride, index: 0)
         
@@ -152,27 +182,41 @@ public final class MetalVideoRenderer: NSObject, MTKViewDelegate {
         
         commandBuffer.present(drawable)
         commandBuffer.commit()
+        
+        // Store current frame for next TNR cycle
+        if enableTNR {
+            previousTexture = videoTexture
+        } else {
+            previousTexture = nil
+        }
     }
     
-    private func createTexture(from pixelBuffer: CVPixelBuffer) -> MTLTexture? {
+    /// Creates a Metal texture from a BGRA CVPixelBuffer (non-planar, single texture)
+    private func createBGRATexture(from pixelBuffer: CVPixelBuffer) -> MTLTexture? {
         guard let textureCache = textureCache else { return nil }
         
         let width = CVPixelBufferGetWidth(pixelBuffer)
         let height = CVPixelBufferGetHeight(pixelBuffer)
         
-        var cvTexture: CVMetalTexture?
-        CVMetalTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
-                                                  textureCache,
-                                                  pixelBuffer,
-                                                  nil,
-                                                  mtkView.colorPixelFormat,
-                                                  width,
-                                                  height,
-                                                  0,
-                                                  &cvTexture)
+        guard width > 0 && height > 0 else { return nil }
         
-        guard let cvTexture = cvTexture else { return nil }
-        return CVMetalTextureGetTexture(cvTexture)
+        var cvTexture: CVMetalTexture?
+        let status = CVMetalTextureCacheCreateTextureFromImage(
+            kCFAllocatorDefault,
+            textureCache,
+            pixelBuffer,
+            nil,
+            .bgra8Unorm,  // Matching kCVPixelFormatType_32BGRA from VideoFrameExtractor
+            width,
+            height,
+            0,            // planeIndex 0 for non-planar
+            &cvTexture
+        )
+        
+        guard status == kCVReturnSuccess, let texture = cvTexture else {
+            return nil
+        }
+        return CVMetalTextureGetTexture(texture)
     }
     
     private func calculateUniforms(pixelBuffer: CVPixelBuffer) -> Uniforms {
@@ -193,7 +237,12 @@ public final class MetalVideoRenderer: NSObject, MTKViewDelegate {
             ambientIntensity: simd_float1(ambientIntensity),
             offset: offset,
             time: simd_float1(time),
-            matrixIntensity: simd_float1(matrixIntensity)
+            matrixIntensity: simd_float1(matrixIntensity),
+            colorMatrixType: simd_uint1(0),
+            colorTemperature: simd_float1(colorTemperature),
+            filmGrainIntensity: simd_float1(filmGrainIntensity),
+            enableToneMapping: simd_uint1(enableToneMapping ? 1 : 0),
+            enableTNR: simd_uint1(enableTNR ? 1 : 0)
         )
     }
 }
@@ -218,6 +267,10 @@ extension SuperResolutionTier {
         case .off: return 0
         case .upscale2k: return 1
         case .upscale4k: return 2
+        case .ultraAI: return 3
+        case .ultra5K: return 4
+        case .extreme8K: return 5
+        case .animeAdaptive: return 6
         }
     }
 }

@@ -12,7 +12,16 @@ final class PlayerViewModel: ObservableObject {
             engine.renderer.gravityMode = gravityMode
         }
     }
-    @Published var showControls = true
+    @Published var showControls = true {
+        didSet {
+            // Cinema mode: hide/show cursor with controls
+            if showControls {
+                NSCursor.unhide()
+            } else if engine.isPlaying {
+                NSCursor.hide()
+            }
+        }
+    }
     @Published var isFullscreen = false
     @Published var osdMessage: String?
     @Published var showingVideoInfo = false
@@ -26,6 +35,10 @@ final class PlayerViewModel: ObservableObject {
             engine.renderer.gravityMode = settings.defaultGravityMode
             engine.renderer.renderingTier = settings.renderingTier
             engine.renderer.ambientIntensity = settings.ambientIntensity
+            engine.renderer.colorTemperature = settings.colorTemperature
+            engine.renderer.filmGrainIntensity = settings.filmGrainIntensity
+            engine.renderer.enableToneMapping = settings.enableToneMapping
+            engine.renderer.enableTNR = settings.enableTNR
             settings.save()
         }
     }
@@ -45,7 +58,16 @@ final class PlayerViewModel: ObservableObject {
         engine.renderer.gravityMode = .stretch
         engine.renderer.renderingTier = settings.renderingTier
         engine.renderer.ambientIntensity = settings.ambientIntensity
+        engine.renderer.colorTemperature = settings.colorTemperature
+        engine.renderer.filmGrainIntensity = settings.filmGrainIntensity
+        engine.renderer.enableToneMapping = settings.enableToneMapping
+        engine.renderer.enableTNR = settings.enableTNR
         setupNotifications()
+    }
+    
+    deinit {
+        // Ensure cursor is visible when ViewModel is deallocated
+        NSCursor.unhide()
     }
     
     private func setupNotifications() {
@@ -62,6 +84,10 @@ final class PlayerViewModel: ObservableObject {
         nc.addObserver(forName: .proPlayerVolumeDown, object: nil, queue: .main) { _ in Task { @MainActor in self.volumeDown() } }
         nc.addObserver(forName: .proPlayerToggleMute, object: nil, queue: .main) { _ in Task { @MainActor in self.toggleMute() } }
         nc.addObserver(forName: .proPlayerToggleFullscreen, object: nil, queue: .main) { _ in Task { @MainActor in self.toggleFullscreen() } }
+        
+        // Fullscreen state sync — tracks green button and Mission Control transitions
+        nc.addObserver(forName: NSWindow.didEnterFullScreenNotification, object: nil, queue: .main) { _ in Task { @MainActor in self.isFullscreen = true } }
+        nc.addObserver(forName: NSWindow.didExitFullScreenNotification, object: nil, queue: .main) { _ in Task { @MainActor in self.isFullscreen = false } }
     }
 
     // MARK: - File Loading
@@ -93,10 +119,16 @@ final class PlayerViewModel: ObservableObject {
     func togglePlayPause() {
         engine.togglePlayPause()
         showOSD(engine.isPlaying ? "▶ Play" : "⏸ Paused")
+        
+        // Show cursor when paused
+        if !engine.isPlaying {
+            NSCursor.unhide()
+        }
     }
 
     func stop() {
         engine.stop()
+        NSCursor.unhide()
         showOSD("⏹ Stopped")
     }
 
@@ -209,7 +241,7 @@ final class PlayerViewModel: ObservableObject {
         guard let targetWindow = window else { return }
         
         targetWindow.toggleFullScreen(nil)
-        isFullscreen.toggle()
+        // Note: isFullscreen is now synced via NSWindow notifications, not manual toggle
     }
     
     // MARK: - Picture in Picture
@@ -267,15 +299,20 @@ final class PlayerViewModel: ObservableObject {
 
     func showOSD(_ message: String) {
         guard settings.showOSD else { return }
-        osdMessage = message
+        
+        withAnimation(ProTheme.Animations.standard) {
+            osdMessage = message
+        }
         
         osdTask?.cancel()
         osdTask = Task {
             try? await Task.sleep(nanoseconds: UInt64(settings.osdDuration * 1_000_000_000))
             guard !Task.isCancelled else { return }
             
-            if self.osdMessage == message {
-                self.osdMessage = nil
+            withAnimation(ProTheme.Animations.smooth) {
+                if self.osdMessage == message {
+                    self.osdMessage = nil
+                }
             }
         }
     }

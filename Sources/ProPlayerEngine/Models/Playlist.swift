@@ -103,7 +103,15 @@ public struct Playlist: Identifiable, Codable {
     }
 
     public mutating func moveItem(from source: IndexSet, to destination: Int) {
-        items.move(fromOffsets: source, toOffset: destination)
+        // Manual move (Foundation-compatible, no SwiftUI dependency)
+        let moving = source.map { items[$0] }
+        let remaining = items.enumerated().filter { !source.contains($0.offset) }.map { $0.element }
+        
+        var result = remaining
+        let insertAt = min(destination, result.count)
+        result.insert(contentsOf: moving, at: insertAt)
+        
+        items = result
         dateModified = Date()
     }
 }

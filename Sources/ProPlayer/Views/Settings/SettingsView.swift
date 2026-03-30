@@ -13,7 +13,7 @@ struct SettingsView: View {
                 audioTab.tabItem { Label("Audio", systemImage: "speaker.wave.3") }
                 subtitlesTab.tabItem { Label("Subtitles", systemImage: "captions.bubble") }
             }
-            .frame(width: 520, height: 460)
+            .frame(width: 580, height: 500)
             .glassBackground(cornerRadius: ProTheme.Radius.xl, opacity: 0.1)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -79,11 +79,40 @@ struct SettingsView: View {
                     }
                 }
                 .pickerStyle(.menu)
-                .help("Select between standard 1080p, 2K (1440p) or 4K (2160p) upscaling modes.")
                 
                 VStack(alignment: .leading) {
                     Text("Ambient intensity")
                     Slider(value: $settings.ambientIntensity, in: 0...1)
+                }
+            }
+            
+            Section("Studio-Grade Enhancements (v13.0)") {
+                Toggle("ACES Filmic Tone Mapping (HDR→SDR)", isOn: $settings.enableToneMapping)
+                    .help("Compresses high dynamic range colors gracefully without clipping.")
+                
+                Toggle("Temporal Noise Reduction (TNR)", isOn: $settings.enableTNR)
+                    .help("Adaptive double-buffering to eliminate noise on static frames. (High GPU Usage)")
+                
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("Color Temperature")
+                        Spacer()
+                        Text("\(Int(settings.colorTemperature))K")
+                            .font(ProTheme.Fonts.mono)
+                            .foregroundColor(.secondary)
+                    }
+                    Slider(value: $settings.colorTemperature, in: 2500...10000, step: 100)
+                }
+                
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("35mm Film Grain")
+                        Spacer()
+                        Text("\(Int(settings.filmGrainIntensity * 100))%")
+                            .font(ProTheme.Fonts.mono)
+                            .foregroundColor(.secondary)
+                    }
+                    Slider(value: $settings.filmGrainIntensity, in: 0...1, step: 0.05)
                 }
             }
             

@@ -6,10 +6,7 @@ struct FullScreenManagerView: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
         DispatchQueue.main.async {
-            // Configurar agresivamente las representaciones de ventana para permitir que 
-            // la aplicación dibuje sobre el Safe Area de la Barra de Menú (Manzanita).
             if let window = view.window {
-                // Al insertar .fullSizeContentView le decimos a macOS que el contenido puede existir debajo de la barra de título/menú
                 window.styleMask.insert(.fullSizeContentView)
                 window.titlebarAppearsTransparent = true
                 window.titleVisibility = .hidden
@@ -26,14 +23,35 @@ struct WindowController {
     
     @MainActor
     static func enterImmersiveFullScreen() {
-        guard let window = NSApp.keyWindow ?? NSApp.windows.first(where: { $0.isVisible }) else { return }
+        // Activate app first — critical for terminal-launched processes
+        NSApp.activate(ignoringOtherApps: true)
         
-        // 1. Inyectamos la capacidad de cubrir todo (inclusive detrás de la manzanita)
+        guard let window = NSApp.keyWindow ?? NSApp.mainWindow ?? NSApp.windows.first(where: { $0.isVisible }) else {
+            // Retry after a short delay — window might not be ready yet
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                guard let window = NSApp.keyWindow ?? NSApp.windows.first(where: { $0.isVisible }) else { return }
+                configureAndEnterFullscreen(window)
+            }
+            return
+        }
+        
+        configureAndEnterFullscreen(window)
+    }
+    
+    @MainActor
+    private static func configureAndEnterFullscreen(_ window: NSWindow) {
+        // 1. Ensure the window supports native fullscreen (Space creation)
+        window.collectionBehavior.insert(.fullScreenPrimary)
+        
+        // 2. Inyectamos la capacidad de cubrir todo (inclusive detrás de la manzanita)
         window.styleMask.insert(.fullSizeContentView)
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         
-        // 2. Si no estamos ya en Full Screen, ordenamos a macOS crear el Space y transicionar
+        // 3. Make it key and front
+        window.makeKeyAndOrderFront(nil)
+        
+        // 4. Si no estamos ya en Full Screen, ordenamos a macOS crear el Space y transicionar
         if !window.styleMask.contains(.fullScreen) {
             window.toggleFullScreen(nil)
         }
@@ -41,16 +59,18 @@ struct WindowController {
     
     @MainActor
     static func exitImmersiveFullScreen() {
-        guard let window = NSApp.keyWindow ?? NSApp.windows.first(where: { $0.isVisible }) else { return }
+        guard let window = NSApp.keyWindow ?? NSApp.mainWindow ?? NSApp.windows.first(where: { $0.isVisible }) else { return }
         
-        // 1. Restauramos el título nativo para el modo Librería (evitando que choque con el Safe Area)
-        window.styleMask.remove(.fullSizeContentView)
-        window.titlebarAppearsTransparent = false
-        window.titleVisibility = .visible
-        
-        // 2. Si seguimos atrapados en Full Screen, obligamos a macOS a regresar al Desktop
+        // 1. Si seguimos atrapados en Full Screen, obligamos a macOS a regresar al Desktop
         if window.styleMask.contains(.fullScreen) {
             window.toggleFullScreen(nil)
+        }
+        
+        // 2. Restauramos el título nativo para el modo Librería
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            window.styleMask.remove(.fullSizeContentView)
+            window.titlebarAppearsTransparent = false
+            window.titleVisibility = .visible
         }
     }
 }

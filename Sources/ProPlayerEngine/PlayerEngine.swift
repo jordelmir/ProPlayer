@@ -106,6 +106,10 @@ public final class PlayerEngine: NSObject, ObservableObject, PlayerEngineProtoco
     public let renderer = MetalVideoRenderer()
     
     @Published public var matrixIntensity: Double = 0.0 { didSet { renderer.matrixIntensity = matrixIntensity } }
+    @Published public var colorTemperature: Float = 6500.0 { didSet { renderer.colorTemperature = colorTemperature } }
+    @Published public var filmGrainIntensity: Float = 0.0 { didSet { renderer.filmGrainIntensity = filmGrainIntensity } }
+    @Published public var enableToneMapping: Bool = false { didSet { renderer.enableToneMapping = enableToneMapping } }
+    @Published public var enableTNR: Bool = false { didSet { renderer.enableTNR = enableTNR } }
     
     // MARK: - Lifecycle
     public let displayLink = VideoDisplayLink()

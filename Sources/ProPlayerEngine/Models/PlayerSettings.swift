@@ -90,6 +90,10 @@ public enum SuperResolutionTier: String, Codable, CaseIterable, Identifiable {
     case off = "Off"
     case upscale2k = "2K (1440p)"
     case upscale4k = "4K (2160p)"
+    case ultraAI = "Ultra AI (Neural)"
+    case ultra5K = "Ultra 5K (Edge Directed)"
+    case extreme8K = "Extreme 8K (EASU)"
+    case animeAdaptive = "Anime Adaptive"
     
     public var id: String { rawValue }
     
@@ -98,6 +102,10 @@ public enum SuperResolutionTier: String, Codable, CaseIterable, Identifiable {
         case .off: return 1.0
         case .upscale2k: return 1.5
         case .upscale4k: return 2.0
+        case .ultraAI: return 2.5
+        case .ultra5K: return 3.0
+        case .extreme8K: return 4.0
+        case .animeAdaptive: return 1.8
         }
     }
     
@@ -106,14 +114,34 @@ public enum SuperResolutionTier: String, Codable, CaseIterable, Identifiable {
         case .off: return "Off"
         case .upscale2k: return "2K"
         case .upscale4k: return "4K"
+        case .ultraAI: return "ULTRA"
+        case .ultra5K: return "5K"
+        case .extreme8K: return "8K"
+        case .animeAdaptive: return "ANIME"
+        }
+    }
+    
+    public var icon: String {
+        switch self {
+        case .off: return "sparkles.none"
+        case .upscale2k: return "sparkles"
+        case .upscale4k: return "sparkles.rectangle.stack"
+        case .ultraAI: return "brain.head.profile"
+        case .ultra5K: return "diamond.inset.filled"
+        case .extreme8K: return "infinity.circle.fill"
+        case .animeAdaptive: return "wand.and.stars"
         }
     }
     
     public var sharpnessWeight: Float {
         switch self {
         case .off: return 0.0
-        case .upscale2k: return -0.10
-        case .upscale4k: return -0.25
+        case .upscale2k: return 0.10
+        case .upscale4k: return 0.25
+        case .ultraAI: return 0.45
+        case .ultra5K: return 0.85
+        case .extreme8K: return 1.5
+        case .animeAdaptive: return 0.30
         }
     }
 }
@@ -134,6 +162,13 @@ public struct PlayerSettings: Codable, Equatable {
     // Elite Rendering
     public var renderingTier: SuperResolutionTier = .upscale4k
     public var ambientIntensity: Double = 0.4
+    
+    // Pro-Grade Enhancements (v13.0)
+    public var colorTemperature: Float = 6500.0 // Kelvin
+    public var filmGrainIntensity: Float = 0.0 // Off by default
+    public var enableToneMapping: Bool = false // ACES Filmic HDR
+    public var enableTNR: Bool = false // Temporal Noise Reduction
+    
 
     // Subtitle defaults
     public var subtitleFontSize: Double = 24

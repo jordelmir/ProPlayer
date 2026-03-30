@@ -1,6 +1,5 @@
 import SwiftUI
 import ProPlayerEngine
-import ProPlayerEngine
 
 struct OSDView: View {
     let message: String
@@ -42,10 +41,39 @@ struct VideoInfoOverlay: View {
             if engine.isLooping, let a = engine.loopA, let b = engine.loopB {
                 infoRow("Loop", "\(FormatUtils.timeString(from: a)) → \(FormatUtils.timeString(from: b))")
             }
+            
+            Divider().background(ProTheme.Colors.accentBlue.opacity(0.3))
+            
+            HStack {
+                Image(systemName: "cpu.fill")
+                    .foregroundColor(ProTheme.Colors.accentBlue)
+                Text("Pro Processing")
+                    .font(ProTheme.Fonts.caption)
+                    .foregroundColor(ProTheme.Colors.accentBlue)
+            }
+            .padding(.top, 4)
+            
+            infoRow("Engine", "Metal (M1 Native)")
+            infoRow("HDR/10-bit", "Adaptive Dither")
+            
+            let tier = engine.renderer.renderingTier
+            HStack(spacing: 8) {
+                Image(systemName: tier.icon)
+                    .foregroundColor(tier == .ultraAI || tier == .animeAdaptive ? .green : ProTheme.Colors.textPrimary)
+                Text(tier.rawValue)
+                    .font(ProTheme.Fonts.mono)
+                    .foregroundColor(tier == .ultraAI || tier == .animeAdaptive ? .green : ProTheme.Colors.textPrimary)
+                    .shadow(color: tier == .ultraAI ? .green.opacity(0.5) : .clear, radius: 4)
+            }
+            .padding(.top, 2)
         }
         .padding(ProTheme.Spacing.lg)
-        .frame(width: 300, alignment: .leading)
+        .frame(width: 320, alignment: .leading)
         .glassBackground(cornerRadius: ProTheme.Radius.medium, opacity: 0.6)
+        .overlay(
+            RoundedRectangle(cornerRadius: ProTheme.Radius.medium)
+                .stroke(ProTheme.Colors.accentBlue.opacity(0.2), lineWidth: 1)
+        )
         .transition(.move(edge: .trailing).combined(with: .opacity))
     }
 

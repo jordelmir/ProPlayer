@@ -1,7 +1,6 @@
 import SwiftUI
 import ProPlayerEngine
 import AVKit
-import ProPlayerEngine
 
 struct PlayerView: View {
     @ObservedObject var viewModel: PlayerViewModel
@@ -32,6 +31,7 @@ struct PlayerView: View {
                     }
                     Spacer()
                 }
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 .animation(ProTheme.Animations.standard, value: viewModel.osdMessage)
             }
 
@@ -85,13 +85,8 @@ struct PlayerView: View {
             viewModel.toggleFullscreen()
         }
         .onTapGesture(count: 1) {
-            withAnimation(ProTheme.Animations.standard) {
-                if viewModel.showControls && viewModel.engine.isPlaying {
-                    viewModel.showControls = false
-                } else {
-                    viewModel.resetControlsTimer()
-                }
-            }
+            viewModel.togglePlayPause()
+            viewModel.resetControlsTimer()
         }
         .gesture(
             MagnifyGesture()
@@ -104,7 +99,7 @@ struct PlayerView: View {
         .onDrop(of: [.fileURL], isTargeted: nil) { providers in
             handleDrop(providers: providers)
         }
-        .background(KeyboardHandler(viewModel: viewModel))
+        .background(KeyboardHandler(viewModel: viewModel, onClose: onClose))
         .contextMenu { contextMenu }
     }
 
@@ -114,8 +109,6 @@ struct PlayerView: View {
     private var videoContent: some View {
         MetalPlayerView(engine: viewModel.engine)
             .ignoresSafeArea()
-            // Custom zoom/scaling is now handled by the Metal renderer's projection matrix (todo)
-            // or by SwiftUI scale effect for now.
             .scaleEffect(viewModel.gravityMode == .customZoom ? viewModel.customZoomScale : 1.0)
             .offset(viewModel.gravityMode == .customZoom ? viewModel.customZoomOffset : .zero)
             .animation(ProTheme.Animations.standard, value: viewModel.gravityMode)
@@ -184,21 +177,25 @@ struct PlayerView: View {
 
 struct KeyboardHandler: NSViewRepresentable {
     let viewModel: PlayerViewModel
+    var onClose: (() -> Void)?
 
     func makeNSView(context: Context) -> KeyCaptureView {
         let view = KeyCaptureView()
         view.viewModel = viewModel
+        view.onClose = onClose
         DispatchQueue.main.async { view.window?.makeFirstResponder(view) }
         return view
     }
 
     func updateNSView(_ nsView: KeyCaptureView, context: Context) {
         nsView.viewModel = viewModel
+        nsView.onClose = onClose
     }
 }
 
 class KeyCaptureView: NSView {
     var viewModel: PlayerViewModel?
+    var onClose: (() -> Void)?
 
     override var acceptsFirstResponder: Bool { true }
 
@@ -208,6 +205,12 @@ class KeyCaptureView: NSView {
         switch event.keyCode {
         case 49: // Space
             Task { @MainActor in vm.togglePlayPause() }
+        case 53: // Escape — return to library
+            Task { @MainActor in
+                vm.stop()
+                WindowController.exitImmersiveFullScreen()
+                onClose?()
+            }
         case 123: // Left arrow
             Task { @MainActor in vm.seekBackward(event.modifierFlags.contains(.shift) ? 30 : 5) }
         case 124: // Right arrow

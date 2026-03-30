@@ -8,8 +8,10 @@ struct ElysiumVanguardApp: App {
     var body: some Scene {
         WindowGroup {
             MainView()
+                .immersiveMacWindow()
                 .frame(minWidth: 900, minHeight: 550)
         }
+        .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1200, height: 750)
         .commands {
             // File menu
@@ -18,11 +20,6 @@ struct ElysiumVanguardApp: App {
                     openFile()
                 }
                 .keyboardShortcut("o", modifiers: .command)
-
-                Button("Open URL...") {
-                    // Placeholder for URL input
-                }
-                .keyboardShortcut("u", modifiers: .command)
             }
 
             // Playback menu
@@ -130,7 +127,9 @@ struct ElysiumVanguardApp: App {
             UTType.quickTimeMovie, UTType.avi
         ]
         panel.title = "Open Video"
-        panel.runModal()
+        if panel.runModal() == .OK, !panel.urls.isEmpty {
+            NotificationCenter.default.post(name: .proPlayerOpenFiles, object: panel.urls)
+        }
     }
 }
 
@@ -149,4 +148,5 @@ extension Notification.Name {
     static let proPlayerVolumeDown = Notification.Name("proPlayerVolumeDown")
     static let proPlayerToggleMute = Notification.Name("proPlayerToggleMute")
     static let proPlayerToggleFullscreen = Notification.Name("proPlayerToggleFullscreen")
+    static let proPlayerOpenFiles = Notification.Name("proPlayerOpenFiles")
 }
