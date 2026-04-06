@@ -56,7 +56,7 @@ public struct Playlist: Identifiable, Codable {
     }
 
     public var totalDuration: Double {
-        items.reduce(0) { $0 + $1.duration }
+        items.reduce(0.0) { $0 + $1.duration }
     }
 
     public mutating func next() -> VideoItem? {

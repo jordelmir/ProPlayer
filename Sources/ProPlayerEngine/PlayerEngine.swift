@@ -183,7 +183,7 @@ public final class PlayerEngine: NSObject, ObservableObject, PlayerEngineProtoco
 
     // MARK: - Init and Lifecycle
 
-    public init(driver: PlayerDriver = AVPlayerDriver()) {
+    public init(driver: PlayerDriver) {
         self.driver = driver
         super.init()
         self.driver.player.volume = Float(volume)

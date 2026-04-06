@@ -1,10 +1,8 @@
 import Foundation
-import Combine
 import AVFoundation
 
-/// PlayerEngineProtocol: Abstract interface for video playback engines.
-/// Enables architectural decoupling and easier Unit Testing for ProPlayer Elite.
-protocol PlayerEngineProtocol: ObservableObject {
+@MainActor
+public protocol PlayerEngineProtocol: AnyObject {
     var isPlaying: Bool { get }
     var currentTime: Double { get }
     var duration: Double { get }
@@ -14,9 +12,8 @@ protocol PlayerEngineProtocol: ObservableObject {
     var isLooping: Bool { get }
     var loopA: Double? { get }
     var loopB: Double? { get }
-    var matrixIntensity: Double { get set } // Elite: Matrix Effect
+    var matrixIntensity: Double { get set }
     
-    // Commands
     func loadFile(url: URL)
     func play()
     func pause()
@@ -31,8 +28,6 @@ protocol PlayerEngineProtocol: ObservableObject {
     func cycleSpeedDown()
     func toggleLoop()
     func captureScreenshot(savePath: URL?)
-    
-    // PiP
     func setupPiP(with layer: AVPlayerLayer)
     func togglePiP()
 }
