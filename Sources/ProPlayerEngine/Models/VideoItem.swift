@@ -21,18 +21,19 @@ public struct MediaItem: Identifiable, Codable {
     }
 }
 
-// Alias para compatibilidad con código existente
 public typealias VideoItem = MediaItem
 
-// EXTRACTOR ELITE DE CARÁTULAS (TOP 1% WORLDWIDE)
 public class MediaMetadataExtractor {
     public static func getArtwork(for url: URL) async -> NSImage? {
         let asset = AVAsset(url: url)
         do {
             let metadata = try await asset.load(.commonMetadata)
             let artworkItems = AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: .commonIdentifierArtwork)
-            if let artworkItem = artworkItems.first, let data = try await artworkItem.load(.dataValue) {
-                return NSImage(data: data)
+            if let artworkItem = artworkItems.first {
+                let data = try await artworkItem.load(.dataValue)
+                if let data = data as? Data {
+                    return NSImage(data: data)
+                }
             }
         } catch {
             print("Error extrayendo carátula: \(error)")
@@ -44,9 +45,9 @@ public class MediaMetadataExtractor {
         let asset = AVAsset(url: url)
         do {
             let metadata = try await asset.load(.commonMetadata)
-            let artist = AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: .commonIdentifierArtist).first?.stringValue ?? "Unknown Artist"
-            let album = AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: .commonIdentifierAlbumName).first?.stringValue ?? "Unknown Album"
-            let year = AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: .commonIdentifierCreationDate).first?.stringValue ?? ""
+            let artist = try await AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: .commonIdentifierArtist).first?.load(.stringValue) ?? "Unknown Artist"
+            let album = try await AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: .commonIdentifierAlbumName).first?.load(.stringValue) ?? "Unknown Album"
+            let year = try await AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: .commonIdentifierCreationDate).first?.load(.stringValue) ?? ""
             return (artist, album, year)
         } catch {
             return nil

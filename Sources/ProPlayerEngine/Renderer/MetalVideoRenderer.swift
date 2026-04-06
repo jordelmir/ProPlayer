@@ -1,3 +1,4 @@
+@MainActor
 import Metal
 import MetalKit
 import AVFoundation
