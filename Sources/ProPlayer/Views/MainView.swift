@@ -1,106 +1,57 @@
 import SwiftUI
-import ProPlayerEngine
 
-struct MainView: View {
-    @StateObject private var playerVM = PlayerViewModel()
-    @StateObject private var libraryVM = LibraryViewModel()
-    @State private var currentView: AppView = .library
-    @State private var showingSettings = false
-
-    enum AppView {
-        case library
-        case player
-    }
-
-    var body: some View {
+public struct MainView: View {
+    @State private var selectedTab: MediaTab = .video
+    
+    enum MediaTab { case video, music }
+    
+    public init() {}
+    
+    public var body: some View {
         ZStack {
-            switch currentView {
-            case .library:
-                LibraryView(libraryVM: libraryVM) { url in
-                    playVideo(url: url)
-                }
-                .transition(.opacity)
-
-            case .player:
-                PlayerView(viewModel: playerVM) {
-                    playerVM.stop()
-                    Task { @MainActor in
-                        WindowController.exitImmersiveFullScreen()
-                        withAnimation { currentView = .library }
+            Theme.backgroundGradient.ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // EL SELECTOR CENTRAL SUPERIOR (Pedido por el Arquitecto)
+                HStack {
+                    Spacer()
+                    Picker("", selection: $selectedTab) {
+                        Text("VÍDEO").tag(MediaTab.video)
+                        Text("MÚSICA").tag(MediaTab.music)
                     }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .frame(width: 250)
+                    .background(Color.white.opacity(0.1))
+                    .cornerRadius(8)
+                    Spacer()
                 }
-                .transition(.opacity)
-            }
-        }
-        .edgesIgnoringSafeArea(.all)
-        .frame(minWidth: 800, maxWidth: .infinity, minHeight: 500, maxHeight: .infinity)
-        .preferredColorScheme(.dark)
-        .animation(ProTheme.Animations.standard, value: currentView == .player)
-        .toolbar(currentView == .player ? .hidden : .visible, for: .windowToolbar)
-        .onDrop(of: [.fileURL], isTargeted: nil) { providers in
-            for provider in providers {
-                _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                    guard let url = url, VideoItem.isVideoFile(url) else { return }
-                    Task { @MainActor in
-                        playVideo(url: url)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+                .background(Color.black.opacity(0.4))
+                
+                if selectedTab == .video {
+                    LibraryView() // Galería de Video actual
+                        .transition(.move(edge: .leading).combined(with: .opacity))
+                } else {
+                    // Placeholder para la Galería de Música
+                    VStack {
+                        Spacer()
+                        Image(systemName: "music.note.list")
+                            .font(.system(size: 80))
+                            .foregroundColor(Theme.accentColor)
+                        Text("ELYSYUM MUSIC CLAW")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                        Text("Inyectando metadatos y carátulas...")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                        Spacer()
                     }
-                }
-            }
-            return true
-        }
-        .sheet(isPresented: $showingSettings) {
-            SettingsView(settings: $playerVM.settings)
-        }
-        .toolbar {
-            ToolbarItemGroup(placement: .automatic) {
-                if currentView == .library {
-                    Button {
-                        if let urls = libraryVM.showOpenFileDialog() {
-                            if urls.count == 1 {
-                                playVideo(url: urls[0])
-                            } else {
-                                libraryVM.addVideoFiles(urls)
-                            }
-                        }
-                    } label: {
-                        Image(systemName: "folder")
-                    }
-                    .help("Open File")
-                }
-
-                Button {
-                    showingSettings = true
-                } label: {
-                    Image(systemName: "gearshape")
-                }
-                .help("Settings")
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .proPlayerOpenFiles)) { notification in
-            guard let urls = notification.object as? [URL] else { return }
-            if urls.count == 1 {
-                playVideo(url: urls[0])
-            } else {
-                libraryVM.addVideoFiles(urls)
-                playerVM.openFiles(urls: urls)
-                Task { @MainActor in
-                    WindowController.enterImmersiveFullScreen()
-                    withAnimation { currentView = .player }
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
         }
-    }
-
-    private func playVideo(url: URL) {
-        // Add to library if not already there
-        libraryVM.addVideoFiles([url])
-
-        // Play
-        playerVM.openFile(url: url)
-        
-        Task { @MainActor in
-            WindowController.enterImmersiveFullScreen()
-            withAnimation { currentView = .player }
-        }
+        .animation(.spring(), value: selectedTab)
     }
 }
