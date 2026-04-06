@@ -30,10 +30,10 @@ public struct MainView: View {
                 .background(Color.black.opacity(0.4))
                 
                 if selectedTab == .video {
-                    LibraryView() // Galería de Video actual
+                    LibraryView() 
                         .transition(.move(edge: .leading).combined(with: .opacity))
                 } else {
-                    // Placeholder para la Galería de Música
+                    MusicLibraryView()
                     VStack {
                         Spacer()
                         Image(systemName: "music.note.list")
