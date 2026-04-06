@@ -1,0 +1,35 @@
+name: Build and Release macOS App (Apple Silicon)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '15.2'
+
+      - name: Build macOS App
+        run: |
+          xcodebuild -scheme ProPlayer -configuration Release -derivedDataPath Build/ -destination 'platform=macOS,arch=arm64' build
+          mkdir -p release
+          cp -r Build/Build/Products/Release/ProPlayer.app release/
+          cd release && zip -r ../ElysiumVanguard8K_v15_Elite.zip ProPlayer.app
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v15.0-Elite
+          name: "Elysium Vanguard 8K v15.0 - Elite Multimedia Edition"
+          body: "🚀 Versión Elite con Reproductor de Música, Carátulas y Selector Dinámico Video/Audio."
+          files: ElysiumVanguard8K_v15_Elite.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
