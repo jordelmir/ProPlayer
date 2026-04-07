@@ -89,6 +89,14 @@ struct MainView: View {
                 }
             }
         }
+        .onAppear {
+            // Delay slightly to ensure NSWindow is fully initialized
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if let url = libraryVM.showOpenFolderDialog() {
+                    libraryVM.clearAndScanFolder(url)
+                }
+            }
+        }
     }
 
     private func playVideo(url: URL) {
