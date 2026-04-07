@@ -22,7 +22,7 @@ final class LibraryViewModel: ObservableObject {
 
         loadLibrary()
         setupSearch()
-        scanStandardDirectories()
+        // scanStandardDirectories() // Disabled as per user request for mandatory folder selection
     }
 
     private func setupSearch() {
@@ -86,19 +86,8 @@ final class LibraryViewModel: ObservableObject {
     func addFolder(_ url: URL) {
         Task {
             isScanning = true
-            let fileManager = FileManager.default
-            guard let enumerator = fileManager.enumerator(at: url, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles]) else {
-                isScanning = false
-                return
-            }
-
-            var videoURLs: [URL] = []
-            while let fileURL = enumerator.nextObject() as? URL {
-                if VideoItem.isVideoFile(fileURL) {
-                    videoURLs.append(fileURL)
-                }
-            }
-
+            let videoURLs = await scanDirectory(url)
+            
             let existingURLs = Set(videos.map { $0.url })
             let filteredURLs = videoURLs.filter { url in !existingURLs.contains(url) }
             
@@ -110,6 +99,46 @@ final class LibraryViewModel: ObservableObject {
             isScanning = false
             saveLibrary()
         }
+    }
+
+    func clearAndScanFolder(_ url: URL) {
+        Task {
+            isScanning = true
+            videos.removeAll()
+            recentFiles.removeAll()
+            
+            let videoURLs = await scanDirectory(url)
+            
+            if !videoURLs.isEmpty {
+                let newItems = await VideoMetadataExtractor.extractMetadata(from: videoURLs)
+                videos = newItems
+            }
+            
+            isScanning = false
+            saveLibrary()
+            applyFiltersAndSort(searchText: searchText, sort: sortOption, source: videos)
+        }
+    }
+
+    private func scanDirectory(_ url: URL) async -> [URL] {
+        await Task.detached {
+            let fileManager = FileManager.default
+            guard let enumerator = fileManager.enumerator(
+                at: url,
+                includingPropertiesForKeys: [.isRegularFileKey],
+                options: [.skipsHiddenFiles, .skipsPackageDescendants]
+            ) else {
+                return []
+            }
+
+            var videoURLs: [URL] = []
+            while let fileURL = enumerator.nextObject() as? URL {
+                if VideoItem.isVideoFile(fileURL) {
+                    videoURLs.append(fileURL)
+                }
+            }
+            return videoURLs
+        }.value
     }
 
     func removeVideo(_ item: VideoItem) {
@@ -202,14 +231,14 @@ final class LibraryViewModel: ObservableObject {
         Task {
             isScanning = true
             
-            // Pass the URLs as strings or URLs (Sendable) to the detached task
+            // Pro approach: Exclusively target ~/Downloads/videos and ensure it exists
             let fileManager = FileManager.default
             let homeURL = fileManager.homeDirectoryForCurrentUser
-            let dirsToScan = [
-                homeURL.appendingPathComponent("Movies"),
-                homeURL.appendingPathComponent("Downloads"),
-                homeURL.appendingPathComponent("Desktop")
-            ]
+            let targetDir = homeURL.appendingPathComponent("Downloads").appendingPathComponent("videos")
+            
+            try? fileManager.createDirectory(at: targetDir, withIntermediateDirectories: true)
+            
+            let dirsToScan = [targetDir]
             
             let discoveredURLs: [URL] = await Task.detached {
                 let fm = FileManager.default

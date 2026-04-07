@@ -3,36 +3,36 @@ import AVFoundation
 import AppKit
 import ProPlayerEngine
 
+@MainActor
 enum VideoMetadataExtractor {
 
     static func extractMetadata(from url: URL) async -> VideoItem {
         let asset = AVURLAsset(url: url)
-        var item = VideoItem(url: url, dateAdded: fileCreationDate(url) ?? Date())
-
-        // Get file size
-        if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
-           let size = attrs[.size] as? Int64 {
-            item.fileSize = size
-        }
+        let creationDate = fileCreationDate(url) ?? Date()
+        let size = fileSize(url)
+        
+        var item = VideoItem(
+            url: url,
+            title: url.deletingPathExtension().lastPathComponent,
+            type: .video,
+            duration: 0,
+            dateAdded: creationDate,
+            fileSize: size,
+            width: 0,
+            height: 0
+        )
 
         do {
             // Load and analyze properties in parallel
-            async let duration = try asset.load(.duration)
-            async let tracks = try asset.load(.tracks)
-            
-            let loadedDuration = try await duration
-            item.duration = loadedDuration.seconds
+            let duration = try await asset.load(.duration)
+            item.duration = duration.seconds
 
-            let videoTracks = try await tracks.filter { $0.mediaType == .video }
+            let tracks = try await asset.load(.tracks)
+            let videoTracks = tracks.filter { $0.mediaType == .video }
             if let videoTrack = videoTracks.first {
                 let size = try await videoTrack.load(.naturalSize)
-                item.width = Int(size.width)
-                item.height = Int(size.height)
-                
-                // Track metadata like codec
-                if let formatDescription = try await videoTrack.load(.formatDescriptions).first {
-                    item.codec = CMFormatDescriptionGetMediaType(formatDescription).description
-                }
+                item.width = Double(size.width)
+                item.height = Double(size.height)
             }
         } catch {
             print("Error loading metadata for \(url): \(error)")
@@ -58,20 +58,6 @@ enum VideoMetadataExtractor {
         return nil
     }
 
-    private static func saveNSImage(_ image: NSImage, to path: String) -> Bool {
-        guard let tiffData = image.tiffRepresentation,
-              let bitmapRep = NSBitmapImageRep(data: tiffData),
-              let jpegData = bitmapRep.representation(using: .jpeg, properties: [.compressionFactor: 0.8]) else {
-            return false
-        }
-        do {
-            try jpegData.write(to: URL(fileURLWithPath: path))
-            return true
-        } catch {
-            return false
-        }
-    }
-
     // Parallel extraction helper
     static func extractMetadata(from urls: [URL]) async -> [VideoItem] {
         await withTaskGroup(of: VideoItem?.self) { group in
@@ -92,5 +78,10 @@ enum VideoMetadataExtractor {
     private static func fileCreationDate(_ url: URL) -> Date? {
         let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
         return attrs?[.creationDate] as? Date
+    }
+    
+    private static func fileSize(_ url: URL) -> Int64 {
+        let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
+        return attrs?[.size] as? Int64 ?? 0
     }
 }

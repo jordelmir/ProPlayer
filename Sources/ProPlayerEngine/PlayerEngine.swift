@@ -1,4 +1,3 @@
-@MainActor
 import Foundation
 @preconcurrency import AVFoundation
 import AVKit

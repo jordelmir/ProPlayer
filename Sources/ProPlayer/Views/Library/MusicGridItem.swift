@@ -1,70 +1,87 @@
 import SwiftUI
 
 struct MusicGridItem: View {
-    let item: MediaItem
-    @State private var artwork: NSImage? = nil
-    @State private var isHovering = False
+    let item: MusicMetadata
+    let onEdit: () -> Void
+    @State private var isHovered = false
     
     var body: some View {
-        VStack {
+        VStack(alignment: .leading, spacing: ProTheme.Spacing.md) {
+            // Album Cover Container
             ZStack {
-                // REFLEJO INFERIOR (Obsidian Floor)
-                if let artwork = artwork {
-                    Image(nsImage: artwork)
+                if let data = item.artworkData, let nsImage = NSImage(data: data) {
+                    Image(nsImage: nsImage)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .scaleEffect(y: -1)
-                        .offset(y: 160)
-                        .opacity(0.2)
-                        .blur(radius: 2)
-                        .mask(LinearGradient(gradient: Gradient(colors: [.clear, .black]), startPoint: .bottom, endPoint: .top))
-                }
-
-                // CARÁTULA PRINCIPAL CON BORDE NEÓN
-                Group {
-                    if let artwork = artwork {
-                        Image(nsImage: artwork)
-                            .resizable()
-                    } else {
-                        Color.gray.opacity(0.3)
-                            .overlay(Image(systemName: "music.note").font(.largeTitle))
+                } else {
+                    // Modern Placeholder
+                    ZStack {
+                        ProTheme.Colors.surfaceDark
+                        Image(systemName: "music.note")
+                            .font(.system(size: 40, weight: .thin))
+                            .foregroundColor(ProTheme.Colors.accentBlue.opacity(0.3))
+                        
+                        // Subtle Glow Overlay
+                        Circle()
+                            .fill(ProTheme.Colors.accentPurple.opacity(0.1))
+                            .blur(radius: 40)
                     }
                 }
-                .aspectRatio(1, contentMode: .fit)
-                .frame(width: 180, height: 180)
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(isHovering ? Theme.accentColor : Color.white.opacity(0.2), lineWidth: 2)
-                        .shadow(color: isHovering ? Theme.accentColor : .clear, radius: 10)
-                )
                 
-                // VISUALIZADOR DE ESPECTRO (Animation)
-                if isHovering {
-                    HStack(spacing: 2) {
-                        ForEach(0..<5) { i in
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(Theme.accentColor)
-                                .frame(width: 4, height: CGFloat.random(in: 10...40))
-                                .animation(Animation.easeInOut(duration: 0.5).repeatForever().delay(Double(i) * 0.1), value: isHovering)
+                // Play/Edit Overlay on Hover
+                if isHovered {
+                    ZStack {
+                        Color.black.opacity(0.4)
+                        Button(action: onEdit) {
+                            Image(systemName: "pencil.circle.fill")
+                                .font(.system(size: 44))
+                                .foregroundColor(.white)
+                                .shadow(color: ProTheme.Colors.accentBlue, radius: 10)
                         }
+                        .buttonStyle(.plain)
                     }
-                    .padding(.bottom, 10)
+                    .transition(.opacity)
                 }
             }
-            .frame(width: 180, height: 180)
+            .frame(width: 200, height: 200)
+            .clipShape(RoundedRectangle(cornerRadius: ProTheme.Radius.large))
+            .shadow(color: .black.opacity(0.5), radius: 10, y: 5)
+            .overlay(
+                RoundedRectangle(cornerRadius: ProTheme.Radius.large)
+                    .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+            )
             
-            Text(item.title)
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
-                .foregroundColor(.white)
-                .lineLimit(1)
-                .padding(.top, 12)
+            // Text Info
+            VStack(alignment: .leading, spacing: ProTheme.Spacing.xxs) {
+                Text(item.title)
+                    .font(ProTheme.Fonts.headline)
+                    .foregroundColor(ProTheme.Colors.textPrimary)
+                    .lineLimit(1)
+                
+                Text(item.artist)
+                    .font(ProTheme.Fonts.subheadline)
+                    .foregroundColor(ProTheme.Colors.textSecondary)
+                    .lineLimit(1)
+                
+                if !item.album.isEmpty && item.album != "Unknown Album" {
+                    Text(item.album)
+                        .font(ProTheme.Fonts.caption)
+                        .foregroundColor(ProTheme.Colors.textTertiary)
+                        .lineLimit(1)
+                }
+            }
+            .padding(.horizontal, 4)
         }
-        .padding()
-        .scaleEffect(isHovering ? 1.05 : 1.0)
-        .onHover { hovering in withAnimation(.spring()) { isHovering = hovering } }
-        .task {
-            self.artwork = await MediaMetadataExtractor.getArtwork(for: item.url)
+        .frame(width: 200)
+        .padding(ProTheme.Spacing.md)
+        .background(
+            RoundedRectangle(cornerRadius: ProTheme.Radius.xl)
+                .fill(isHovered ? Color.white.opacity(0.05) : Color.clear)
+        )
+        .onHover { hovering in
+            withAnimation(ProTheme.Animations.interactive) {
+                isHovered = hovering
+            }
         }
     }
 }

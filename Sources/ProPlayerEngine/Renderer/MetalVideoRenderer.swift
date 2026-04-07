@@ -1,8 +1,8 @@
-@MainActor
 import Metal
 import MetalKit
 import AVFoundation
 
+@MainActor
 public final class MetalVideoRenderer: NSObject, MTKViewDelegate {
     
     struct Uniforms {

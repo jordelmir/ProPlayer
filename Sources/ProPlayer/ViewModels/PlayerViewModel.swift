@@ -4,7 +4,7 @@ import ProPlayerEngine
 
 @MainActor
 final class PlayerViewModel: ObservableObject {
-    @Published var engine: PlayerEngine = PlayerEngine()
+    @Published var engine: PlayerEngine = PlayerEngine(driver: AVPlayerDriver())
     @Published var gravityMode: VideoGravityMode = .fill {
         didSet {
             engine.gravityMode = gravityMode
@@ -26,7 +26,7 @@ final class PlayerViewModel: ObservableObject {
     @Published var osdMessage: String?
     @Published var showingVideoInfo = false
     @Published var currentVideoItem: VideoItem?
-    @Published var playlist = Playlist()
+    @Published var playlist = Playlist(name: "Queue")
     @Published var customZoomScale: CGFloat = 1.0
     @Published var customZoomOffset: CGSize = .zero
     @Published var matrixIntensity: Double = 0.0 { didSet { engine.matrixIntensity = matrixIntensity } }
@@ -108,7 +108,10 @@ final class PlayerViewModel: ObservableObject {
     }
 
     func openFiles(urls: [URL]) {
-        playlist = Playlist(items: urls.map { VideoItem(url: $0) })
+        let items = urls.map { url in
+            VideoItem(url: url, title: url.deletingPathExtension().lastPathComponent, type: .video)
+        }
+        playlist = Playlist(name: "Queue", items: items)
         if let first = urls.first {
             openFile(url: first)
         }
@@ -265,7 +268,8 @@ final class PlayerViewModel: ObservableObject {
     // MARK: - Playlist
 
     func playNext() {
-        if var pl = Optional(playlist), let next = pl.next() {
+        var pl = playlist
+        if let next = pl.next() {
             playlist = pl
             openFile(url: next.url)
         }
@@ -276,7 +280,8 @@ final class PlayerViewModel: ObservableObject {
             engine.seek(to: 0)
             return
         }
-        if var pl = Optional(playlist), let prev = pl.previous() {
+        var pl = playlist
+        if let prev = pl.previous() {
             playlist = pl
             openFile(url: prev.url)
         }

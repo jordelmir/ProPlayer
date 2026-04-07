@@ -61,7 +61,7 @@ struct VideoGridItem: View {
                     VStack {
                         Spacer()
                         GeometryReader { geo in
-                            let progress = (item.playbackPosition ?? 0) / max(1, item.duration)
+                            let progress = item.playbackPosition / max(1, item.duration)
                             Rectangle()
                                 .fill(ProTheme.Colors.accentBlue)
                                 .frame(width: geo.size.width * progress, height: 3)

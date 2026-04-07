@@ -232,53 +232,7 @@ struct LibraryView: View {
     private var listView: some View {
         List {
             ForEach(Array(displayedVideos.enumerated()), id: \.element.id) { index, video in
-                HStack(spacing: ProTheme.Spacing.md) {
-                    // Mini thumbnail
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(ProTheme.Colors.surfaceDark)
-                            .frame(width: 80, height: 45)
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(ProTheme.Colors.textTertiary)
-                    }
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(video.title)
-                            .font(ProTheme.Fonts.subheadline)
-                            .foregroundColor(ProTheme.Colors.textPrimary)
-                            .lineLimit(1)
-                        Text("\(video.resolutionLabel) • \(video.codecLabel)")
-                            .font(ProTheme.Fonts.caption)
-                            .foregroundColor(ProTheme.Colors.textTertiary)
-                    }
-
-                    Spacer()
-
-                    Text(video.durationLabel)
-                        .font(ProTheme.Fonts.mono)
-                        .foregroundColor(ProTheme.Colors.textSecondary)
-
-                    Text(video.fileSizeLabel)
-                        .font(ProTheme.Fonts.caption)
-                        .foregroundColor(ProTheme.Colors.textTertiary)
-                        .frame(width: 70, alignment: .trailing)
-
-                    Text(FormatUtils.relativeDateString(from: video.dateAdded))
-                        .font(ProTheme.Fonts.caption)
-                        .foregroundColor(ProTheme.Colors.textTertiary)
-                        .frame(width: 80, alignment: .trailing)
-                }
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    onPlayVideo(video.url)
-                }
-                .contextMenu {
-                    Button("Play") { onPlayVideo(video.url) }
-                    Button("Remove") { libraryVM.removeVideo(video) }
-                }
-                .transition(.opacity.combined(with: .move(edge: .leading)))
-                .animation(ProTheme.Animations.smooth.delay(Double(index) * 0.03), value: displayedVideos.count)
+                VideoListRow(video: video, index: index, onPlay: { onPlayVideo(video.url) }, onRemove: { libraryVM.removeVideo(video) })
             }
         }
         .listStyle(.inset)
@@ -357,5 +311,61 @@ struct LibraryView: View {
         case .allVideos:
             return libraryVM.filteredVideos
         }
+    }
+}
+
+struct VideoListRow: View {
+    let video: VideoItem
+    let index: Int
+    let onPlay: () -> Void
+    let onRemove: () -> Void
+    
+    var body: some View {
+        HStack(spacing: ProTheme.Spacing.md) {
+            // Mini thumbnail
+            ZStack {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(ProTheme.Colors.surfaceDark)
+                    .frame(width: 80, height: 45)
+                Image(systemName: "play.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(ProTheme.Colors.textTertiary)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(video.title)
+                    .font(ProTheme.Fonts.subheadline)
+                    .foregroundColor(ProTheme.Colors.textPrimary)
+                    .lineLimit(1)
+                Text("\(video.resolutionLabel) • \(video.codecLabel)")
+                    .font(ProTheme.Fonts.caption)
+                    .foregroundColor(ProTheme.Colors.textTertiary)
+            }
+
+            Spacer()
+
+            Text(video.durationLabel)
+                .font(ProTheme.Fonts.mono)
+                .foregroundColor(ProTheme.Colors.textSecondary)
+
+            Text(video.fileSizeLabel)
+                .font(ProTheme.Fonts.caption)
+                .foregroundColor(ProTheme.Colors.textTertiary)
+                .frame(width: 70, alignment: .trailing)
+
+            Text(FormatUtils.relativeDateString(from: video.dateAdded))
+                .font(ProTheme.Fonts.caption)
+                .foregroundColor(ProTheme.Colors.textTertiary)
+                .frame(width: 80, alignment: .trailing)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onPlay()
+        }
+        .contextMenu {
+            Button("Play") { onPlay() }
+            Button("Remove") { onRemove() }
+        }
+        .listRowBackground(Color.clear)
     }
 }
