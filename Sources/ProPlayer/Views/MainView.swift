@@ -4,8 +4,10 @@ import ProPlayerEngine
 struct MainView: View {
     @StateObject private var playerVM = PlayerViewModel()
     @StateObject private var libraryVM = LibraryViewModel()
+    @StateObject private var musicVM = MusicLibraryViewModel()
     @State private var currentView: AppView = .library
     @State private var showingSettings = false
+    @State private var mediaMode: MediaMode = .video
 
     enum AppView {
         case library
@@ -14,12 +16,14 @@ struct MainView: View {
 
     var body: some View {
         ZStack {
+            // Dynamic background - shifts color based on mode
+            dynamicBackground
+                .ignoresSafeArea()
+            
             switch currentView {
             case .library:
-                LibraryView(libraryVM: libraryVM) { url in
-                    playVideo(url: url)
-                }
-                .transition(.opacity)
+                libraryLayer
+                    .transition(.opacity)
 
             case .player:
                 PlayerView(viewModel: playerVM) {
@@ -33,16 +37,21 @@ struct MainView: View {
             }
         }
         .edgesIgnoringSafeArea(.all)
-        .frame(minWidth: 800, maxWidth: .infinity, minHeight: 500, maxHeight: .infinity)
+        .frame(minWidth: 900, maxWidth: .infinity, minHeight: 550, maxHeight: .infinity)
         .preferredColorScheme(.dark)
         .animation(ProTheme.Animations.standard, value: currentView == .player)
         .toolbar(currentView == .player ? .hidden : .visible, for: .windowToolbar)
         .onDrop(of: [.fileURL], isTargeted: nil) { providers in
             for provider in providers {
                 _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                    guard let url = url, VideoItem.isVideoFile(url) else { return }
+                    guard let url = url else { return }
                     Task { @MainActor in
-                        playVideo(url: url)
+                        if VideoItem.isVideoFile(url) {
+                            mediaMode = .video
+                            playVideo(url: url)
+                        } else if MusicTrack.isMusicFile(url) {
+                            mediaMode = .music
+                        }
                     }
                 }
             }
@@ -54,18 +63,30 @@ struct MainView: View {
         .toolbar {
             ToolbarItemGroup(placement: .automatic) {
                 if currentView == .library {
+                    // Media Mode Selector — the centerpiece
+                    ProfessionalMediaSelector(selectedMode: $mediaMode)
+                    
+                    Spacer()
+                    
                     Button {
-                        if let urls = libraryVM.showOpenFileDialog() {
-                            if urls.count == 1 {
-                                playVideo(url: urls[0])
-                            } else {
-                                libraryVM.addVideoFiles(urls)
+                        switch mediaMode {
+                        case .video:
+                            if let urls = libraryVM.showOpenFileDialog() {
+                                if urls.count == 1 {
+                                    playVideo(url: urls[0])
+                                } else {
+                                    libraryVM.addVideoFiles(urls)
+                                }
+                            }
+                        case .music:
+                            if let url = musicVM.showMusicFolderDialog() {
+                                musicVM.addFolder(url)
                             }
                         }
                     } label: {
-                        Image(systemName: "folder")
+                        Image(systemName: mediaMode == .video ? "folder" : "folder.badge.plus")
                     }
-                    .help("Open File")
+                    .help(mediaMode == .video ? "Open Video File" : "Add Music Folder")
                 }
 
                 Button {
@@ -90,7 +111,6 @@ struct MainView: View {
             }
         }
         .onAppear {
-            // Delay slightly to ensure NSWindow is fully initialized
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 if let url = libraryVM.showOpenFolderDialog() {
                     libraryVM.clearAndScanFolder(url)
@@ -98,12 +118,58 @@ struct MainView: View {
             }
         }
     }
+    
+    // MARK: - Library Layer
+    
+    @ViewBuilder
+    private var libraryLayer: some View {
+        Group {
+            switch mediaMode {
+            case .video:
+                LibraryView(libraryVM: libraryVM) { url in
+                    playVideo(url: url)
+                }
+            case .music:
+                MusicLibraryView(musicVM: musicVM)
+            }
+        }
+        .animation(ProTheme.Animations.smooth, value: mediaMode)
+    }
+    
+    // MARK: - Dynamic Background
+    
+    private var dynamicBackground: some View {
+        ZStack {
+            ProTheme.Colors.deepBlack
+            
+            // Mode-reactive ambient glow
+            RadialGradient(
+                colors: [
+                    mediaMode.glowColor.opacity(0.06),
+                    Color.clear
+                ],
+                center: .topLeading,
+                startRadius: 50,
+                endRadius: 600
+            )
+            
+            RadialGradient(
+                colors: [
+                    mediaMode.glowColor.opacity(0.03),
+                    Color.clear
+                ],
+                center: .bottomTrailing,
+                startRadius: 100,
+                endRadius: 500
+            )
+        }
+        .animation(ProTheme.Animations.slow, value: mediaMode)
+    }
+
+    // MARK: - Actions
 
     private func playVideo(url: URL) {
-        // Add to library if not already there
         libraryVM.addVideoFiles([url])
-
-        // Play
         playerVM.openFile(url: url)
         
         Task { @MainActor in
