@@ -1,6 +1,8 @@
 // swift-tools-version: 5.9
 import PackageDescription
 
+let ciSettings: [SwiftSetting] = Context.environment["CI"] != nil ? [.unsafeFlags(["-gnone"])] : []
+
 let package = Package(
     name: "ElysiumVanguardProPlayer8K",
     platforms: [
@@ -20,7 +22,7 @@ let package = Package(
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency")
-            ]
+            ] + ciSettings
         ),
         .executableTarget(
             name: "ProPlayer",
@@ -32,7 +34,7 @@ let package = Package(
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency")
-            ]
+            ] + ciSettings
         ),
         .executableTarget(
             name: "PlayerCLI",
@@ -40,7 +42,7 @@ let package = Package(
             path: "Sources/PlayerCLI",
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency")
-            ]
+            ] + ciSettings
         )
     ]
 )
