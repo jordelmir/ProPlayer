@@ -1,7 +1,9 @@
 // swift-tools-version: 5.9
 import PackageDescription
 
-let ciSettings: [SwiftSetting] = Context.environment["CI"] != nil ? [.unsafeFlags(["-gnone"])] : []
+let ciSettings: [SwiftSetting] = Context.environment["CI"] != nil ? [
+    .unsafeFlags(["-gnone", "-Xfrontend", "-disable-round-trip-debug-types", "-Xfrontend", "-disable-serialize-debug-info"])
+] : []
 
 let package = Package(
     name: "ElysiumVanguardProPlayer8K",
