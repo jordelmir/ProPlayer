@@ -1,6 +1,6 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════════
-# Elysium Vanguard Pro Player 8K — Production Build System v14.0
+# Elysium Vanguard Pro Player 8K — Production Build System v16.0
 # ═══════════════════════════════════════════════════════════════════
 # 
 # This script performs a clean Release build, assembles a native
@@ -18,7 +18,7 @@ BUNDLE_NAME="${APP_NAME}.app"
 EXECUTABLE_NAME="ElysiumVanguardProPlayer8K"
 PRODUCT_NAME="ProPlayer"                       # SPM executable target
 BUNDLE_ID="com.jordelmir.ElysiumVanguardProPlayer8K"
-VERSION="14.0"
+VERSION="16.0"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${SCRIPT_DIR}/.build"
@@ -38,7 +38,7 @@ NC='\033[0m'
 banner() {
     echo ""
     echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
-    echo -e "${BOLD}${CYAN}  ⚡ ELYSIUM VANGUARD PRO PLAYER 8K — BUILD SYSTEM v14.0${NC}"
+    echo -e "${BOLD}${CYAN}  ⚡ ELYSIUM VANGUARD PRO PLAYER 8K — BUILD SYSTEM v16.0${NC}"
     echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
     echo ""
 }
@@ -213,3 +213,8 @@ echo ""
 echo -e "  Launch:  ${BOLD}open \"${INSTALL_DIR}/${BUNDLE_NAME}\"${NC}"
 echo -e "  Finder:  ${BOLD}Applications → ${APP_NAME}${NC}"
 echo ""
+
+if [ -f "${SCRIPT_DIR}/create_dmg.sh" ]; then
+    echo -e "${YELLOW}Packing into DMG via create_dmg.sh...${NC}"
+    bash "${SCRIPT_DIR}/create_dmg.sh"
+fi

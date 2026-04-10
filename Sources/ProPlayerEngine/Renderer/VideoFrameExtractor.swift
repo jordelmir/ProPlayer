@@ -16,14 +16,16 @@ public final class VideoFrameExtractor: ObservableObject {
     /// Attaches the extractor to a new player item.
     public func attach(to item: AVPlayerItem?) {
         // Clean up old output
-        if let output = videoOutput, let oldItem = playerItem {
-            oldItem.remove(output)
+        if let output = videoOutput {
+            playerItem?.remove(output)
             videoOutput = nil
         }
         
+        // Reset state
+        self.currentPixelBuffer = nil
+        
         guard let item = item else {
             self.playerItem = nil
-            self.currentPixelBuffer = nil
             return
         }
         

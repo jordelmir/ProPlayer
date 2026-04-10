@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: Set up Swift
+      uses: swift-actions/setup-swift@v2
+      with:
+        swift-version: '6.0'
+
+    - name: Make Scripts Executable
+      run: |
+        chmod +x build_evp8k.sh
+        chmod +x create_dmg.sh
+      
+    - name: Build Application and DMG
+      run: ./build_evp8k.sh
+        
+    - name: Rename Release DMG
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        mv .build/release/ElysiumVanguardPro_${VERSION}_Mac.dmg ElysiumVanguardPro_${VERSION}_Mac.dmg
+      
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ElysiumVanguardPro_*_Mac.dmg
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -687,16 +687,20 @@ public final class PlayerEngine: NSObject, ObservableObject, PlayerEngineProtoco
         Task {
             do {
                 let (image, _) = try await generator.image(at: time)
-                let nsImage = NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
-                let path = savePath?.path ?? NSTemporaryDirectory()
-                let fileName = "EVP8K_\(Int(Date().timeIntervalSince1970)).png"
-                let fullPath = (path as NSString).appendingPathComponent(fileName)
-                if let tiff = nsImage.tiffRepresentation,
-                   let rep = NSBitmapImageRep(data: tiff),
-                   let png = rep.representation(using: .png, properties: [:]) {
-                    try png.write(to: URL(fileURLWithPath: fullPath))
+                autoreleasepool {
+                    let nsImage = NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
+                    let path = savePath?.path ?? NSTemporaryDirectory()
+                    let fileName = "EVP8K_\(Int(Date().timeIntervalSince1970)).png"
+                    let fullPath = (path as NSString).appendingPathComponent(fileName)
+                    if let tiff = nsImage.tiffRepresentation,
+                       let rep = NSBitmapImageRep(data: tiff),
+                       let png = rep.representation(using: .png, properties: [:]) {
+                        try? png.write(to: URL(fileURLWithPath: fullPath))
+                    }
                 }
-            } catch {}
+            } catch {
+                print("[PlayerEngine] Screenshot failed: \(error)")
+            }
         }
     }
 

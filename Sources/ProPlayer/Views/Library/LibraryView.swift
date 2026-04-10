@@ -95,7 +95,7 @@ struct LibraryView: View {
         }
         .background(
             ZStack {
-                MatrixRainView()
+                MatrixRainView(themeColor: ProTheme.Colors.accentBlue)
                 Color.black.opacity(0.7)
             }
         )
@@ -288,7 +288,7 @@ struct LibraryView: View {
 
     private var emptyState: some View {
         ZStack {
-            MatrixRainView()
+            MatrixRainView(themeColor: ProTheme.Colors.accentBlue)
                 .opacity(0.12)
                 .ignoresSafeArea()
 

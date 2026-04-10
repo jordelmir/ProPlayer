@@ -100,7 +100,7 @@ struct ControlsOverlay: View {
     private var bottomBar: some View {
         VStack(spacing: ProTheme.Spacing.sm) {
             // Timeline
-            TimelineView(engine: viewModel.engine) { percent in
+            VideoTimelineView(engine: viewModel.engine) { percent in
                 viewModel.seekToPercent(percent)
             }
             .padding(.horizontal, ProTheme.Spacing.xl)

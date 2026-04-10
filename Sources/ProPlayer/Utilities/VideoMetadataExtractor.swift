@@ -50,7 +50,9 @@ enum VideoMetadataExtractor {
 
         do {
             let (image, _) = try await generator.image(at: .zero)
-            return NSImage(cgImage: image, size: .zero)
+            return autoreleasepool {
+                return NSImage(cgImage: image, size: .zero)
+            }
         } catch {
             print("Thumbnail generation failed: \(error)")
         }
@@ -72,19 +74,35 @@ enum VideoMetadataExtractor {
         }
     }
 
-    // Parallel extraction helper
+    // Parallel extraction helper with concurrency limit to prevent memory spikes
     static func extractMetadata(from urls: [URL]) async -> [VideoItem] {
-        await withTaskGroup(of: VideoItem?.self) { group in
-            for url in urls {
+        let concurrencyLimit = 8
+        return await withTaskGroup(of: VideoItem?.self) { group in
+            var results: [VideoItem] = []
+            var index = 0
+            
+            // Fill initial tasks
+            while index < min(urls.count, concurrencyLimit) {
+                let url = urls[index]
                 group.addTask {
-                    await extractMetadata(from: url)
+                    return await extractMetadata(from: url)
+                }
+                index += 1
+            }
+            
+            // Process remaining and collect results
+            for await item in group {
+                if let item = item { results.append(item) }
+                
+                if index < urls.count {
+                    let url = urls[index]
+                    group.addTask {
+                        return await extractMetadata(from: url)
+                    }
+                    index += 1
                 }
             }
             
-            var results: [VideoItem] = []
-            for await item in group {
-                if let item = item { results.append(item) }
-            }
             return results
         }
     }

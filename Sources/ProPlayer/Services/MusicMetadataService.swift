@@ -140,19 +140,65 @@ final class MusicMetadataService {
     
     // MARK: - Batch Read
     
-    /// Extracts metadata from multiple URLs in parallel.
+    /// Extracts metadata from multiple URLs in parallel with concurrency limit.
     func extractTracks(from urls: [URL]) async -> [MusicTrack] {
-        await withTaskGroup(of: MusicTrack.self) { group in
-            for url in urls {
-                group.addTask {
-                    await self.readMetadata(from: url)
+        let concurrencyLimit = 16
+        return await withTaskGroup(of: MusicTrack.self) { group in
+            var results: [MusicTrack] = []
+            var index = 0
+            
+            // Initial batch
+            while index < min(urls.count, concurrencyLimit) {
+                let url = urls[index]
+                group.addTask { await self.readMetadata(from: url) }
+                index += 1
+            }
+            
+            // Process remaining and collect
+            for await track in group {
+                results.append(track)
+                
+                if index < urls.count {
+                    let url = urls[index]
+                    group.addTask { await self.readMetadata(from: url) }
+                    index += 1
                 }
             }
-            var tracks: [MusicTrack] = []
-            for await track in group {
-                tracks.append(track)
+            
+            return results.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        }
+    }
+    
+    // MARK: - Auto-Tag & Batch
+    
+    /// Uses MusicBrainz + AcoustID to automatically identify and complete a track's metadata.
+    public func autoTag(track: MusicTrack) async throws -> MusicTrack {
+        let result = try await MusicBrainzService.shared.lookupTrack(track)
+        
+        var updated = track
+        if track.title == "Unknown Title" || track.title == track.url.deletingPathExtension().lastPathComponent {
+            updated.title = result.title
+        }
+        if track.artist == "Unknown Artist" { updated.artist = result.artist }
+        if track.album == "Unknown Album" { updated.album = result.album }
+        if track.year.isEmpty { updated.year = result.year }
+        if track.trackNumber.isEmpty { updated.trackNumber = result.trackNumber }
+        
+        // If we found cover art and the track currently lacks it, download it
+        if let coverURL = result.coverURL, updated.artworkData == nil {
+            if let (data, res) = try? await URLSession.shared.data(from: coverURL),
+               let httpRes = res as? HTTPURLResponse, httpRes.statusCode == 200 {
+                updated.artworkData = data
             }
-            return tracks.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        }
+        
+        return updated
+    }
+    
+    /// Writes metadata sequentially for a batch of tracks.
+    public func batchWrite(tracks: [MusicTrack]) async throws {
+        for track in tracks {
+            try await writeMetadata(track)
         }
     }
     

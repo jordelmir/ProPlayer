@@ -8,6 +8,7 @@ struct MainView: View {
     @State private var currentView: AppView = .library
     @State private var showingSettings = false
     @State private var mediaMode: MediaMode = .video
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     enum AppView {
         case library
@@ -19,6 +20,14 @@ struct MainView: View {
             // Dynamic background - shifts color based on mode
             dynamicBackground
                 .ignoresSafeArea()
+            
+            if !hasCompletedOnboarding {
+                OnboardingView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black)
+                    .zIndex(1000)
+                    .transition(.opacity)
+            } else {
             
             switch currentView {
             case .library:
@@ -34,6 +43,21 @@ struct MainView: View {
                     }
                 }
                 .transition(.opacity)
+            }
+            }
+            
+            // MiniPlayer floating panel
+            if MusicPlayerEngine.shared.currentTrack != nil && mediaMode != .music && currentView == .library {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        MiniPlayerView()
+                            .padding(ProTheme.Spacing.xxl)
+                    }
+                }
+                .zIndex(100)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .edgesIgnoringSafeArea(.all)

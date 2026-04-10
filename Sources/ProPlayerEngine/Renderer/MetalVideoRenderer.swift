@@ -2,6 +2,7 @@ import Metal
 import MetalKit
 import AVFoundation
 
+@MainActor
 public final class MetalVideoRenderer: NSObject, MTKViewDelegate {
     
     struct Uniforms {
@@ -37,6 +38,7 @@ public final class MetalVideoRenderer: NSObject, MTKViewDelegate {
     
     // Core Rendering State
     private var previousTexture: MTLTexture?
+    private var previousCVTexture: CVMetalTexture?
     
     public var currentPixelBuffer: CVPixelBuffer? {
         didSet {
@@ -159,10 +161,10 @@ public final class MetalVideoRenderer: NSObject, MTKViewDelegate {
         }
         
         renderEncoder.setRenderPipelineState(pipelineState)
-        renderEncoder.setFragmentTexture(videoTexture, index: 0)
+        renderEncoder.setFragmentTexture(videoTexture.texture, index: 0)
         
         // Provide previous texture for TNR (fallback to current if nil)
-        renderEncoder.setFragmentTexture(previousTexture ?? videoTexture, index: 1)
+        renderEncoder.setFragmentTexture(previousTexture ?? videoTexture.texture, index: 1)
         
         var uniforms = calculateUniforms(pixelBuffer: pixelBuffer)
         
@@ -185,14 +187,21 @@ public final class MetalVideoRenderer: NSObject, MTKViewDelegate {
         
         // Store current frame for next TNR cycle
         if enableTNR {
-            previousTexture = videoTexture
+            previousTexture = videoTexture.texture
+            previousCVTexture = videoTexture.cvTexture
         } else {
             previousTexture = nil
+            previousCVTexture = nil
+        }
+        
+        // CRITICAL: Flush the cache to ensure memory is reclaimed
+        if let cache = textureCache {
+            CVMetalTextureCacheFlush(cache, 0)
         }
     }
     
-    /// Creates a Metal texture from a BGRA CVPixelBuffer (non-planar, single texture)
-    private func createBGRATexture(from pixelBuffer: CVPixelBuffer) -> MTLTexture? {
+    /// Creates a Metal texture wrapper from a BGRA CVPixelBuffer
+    private func createBGRATexture(from pixelBuffer: CVPixelBuffer) -> (texture: MTLTexture, cvTexture: CVMetalTexture)? {
         guard let textureCache = textureCache else { return nil }
         
         let width = CVPixelBufferGetWidth(pixelBuffer)
@@ -206,17 +215,18 @@ public final class MetalVideoRenderer: NSObject, MTKViewDelegate {
             textureCache,
             pixelBuffer,
             nil,
-            .bgra8Unorm,  // Matching kCVPixelFormatType_32BGRA from VideoFrameExtractor
+            .bgra8Unorm,
             width,
             height,
-            0,            // planeIndex 0 for non-planar
+            0,
             &cvTexture
         )
         
-        guard status == kCVReturnSuccess, let texture = cvTexture else {
+        guard status == kCVReturnSuccess, let texture = cvTexture,
+              let mtlTexture = CVMetalTextureGetTexture(texture) else {
             return nil
         }
-        return CVMetalTextureGetTexture(texture)
+        return (mtlTexture, texture)
     }
     
     private func calculateUniforms(pixelBuffer: CVPixelBuffer) -> Uniforms {

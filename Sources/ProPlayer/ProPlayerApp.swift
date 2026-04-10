@@ -4,6 +4,8 @@ import ProPlayerEngine
 
 @main
 struct ProPlayerEliteApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    
 
     var body: some Scene {
         WindowGroup {
@@ -148,4 +150,17 @@ extension Notification.Name {
     static let proPlayerToggleMute = Notification.Name("proPlayerToggleMute")
     static let proPlayerToggleFullscreen = Notification.Name("proPlayerToggleFullscreen")
     static let proPlayerOpenFiles = Notification.Name("proPlayerOpenFiles")
+}
+
+// MARK: - App Delegate & TouchBar Support
+
+class AppDelegate: NSObject, NSApplicationDelegate {
+    let touchBarDelegate = ElysiumTouchBarDelegate()
+    
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        if #available(macOS 10.12.2, *) {
+            NSApplication.shared.isAutomaticCustomizeTouchBarMenuItemEnabled = true
+            NSApplication.shared.touchBar = touchBarDelegate.makeTouchBar()
+        }
+    }
 }

@@ -3,32 +3,54 @@ import SwiftUI
 struct MusicLibraryView: View {
     @ObservedObject var musicVM: MusicLibraryViewModel
     @State private var editingTrack: MusicTrack?
+    @State private var viewMode: MusicViewMode = .list
+    @State private var showLyrics = false
+    
+    enum MusicViewMode {
+        case list, grid
+    }
     
     var body: some View {
-        HSplitView {
-            // Main list
-            mainContent
-                .frame(minWidth: 500)
-            
-            // Metadata editor panel
-            if let track = editingTrack {
-                MetadataEditorView(
-                    track: Binding(
-                        get: { track },
-                        set: { editingTrack = $0 }
-                    ),
-                    onSave: { updated in
-                        musicVM.saveMetadata(for: updated)
-                        editingTrack = nil
-                    },
-                    onCancel: {
-                        editingTrack = nil
-                    }
-                )
-                .transition(.move(edge: .trailing).combined(with: .opacity))
+        VStack(spacing: 0) {
+            HSplitView {
+                // Main list
+                mainContent
+                    .frame(minWidth: 500)
+                
+                // Lyrics panel
+                if showLyrics {
+                    LyricsView()
+                        .frame(minWidth: 300)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                }
+                
+                // Metadata editor panel
+                if let track = editingTrack {
+                    MetadataEditorView(
+                        track: Binding(
+                            get: { track },
+                            set: { editingTrack = $0 }
+                        ),
+                        onSave: { updated in
+                            musicVM.saveMetadata(for: updated)
+                            editingTrack = nil
+                        },
+                        onCancel: {
+                            editingTrack = nil
+                        }
+                    )
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+                }
             }
+            
+            // Now Playing Bar
+            NowPlayingBar()
         }
         .animation(ProTheme.Animations.smooth, value: editingTrack?.id)
+        .animation(ProTheme.Animations.smooth, value: showLyrics)
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ToggleLyrics"))) { _ in
+            withAnimation { showLyrics.toggle() }
+        }
     }
     
     // MARK: - Main Content
@@ -49,15 +71,33 @@ struct MusicLibraryView: View {
             } else if musicVM.filteredTracks.isEmpty {
                 emptyMusicState
             } else {
-                trackListView
+                if viewMode == .list {
+                    trackListView
+                } else {
+                    AlbumArtGridView(libraryVM: musicVM)
+                }
             }
         }
         .background(
             ZStack {
                 ProTheme.Colors.deepBlack
+                
+                // Purple Matrix Rain - Nivel Máximo
+                MatrixRainView(themeColor: ProTheme.Colors.accentPurple)
+                    .opacity(0.45)
+                    .blur(radius: 0.5)
+                
+                // Dark vignette overlay to ensure text readability in the center
+                RadialGradient(
+                    colors: [Color.clear, ProTheme.Colors.deepBlack.opacity(0.6)],
+                    center: .center,
+                    startRadius: 200,
+                    endRadius: 800
+                )
+                
                 // Subtle purple ambient
                 RadialGradient(
-                    colors: [ProTheme.Colors.accentPurple.opacity(0.05), Color.clear],
+                    colors: [ProTheme.Colors.accentPurple.opacity(0.1), Color.clear],
                     center: .topTrailing,
                     startRadius: 100,
                     endRadius: 500
@@ -100,6 +140,27 @@ struct MusicLibraryView: View {
             .padding(.horizontal, ProTheme.Spacing.sm)
             .padding(.vertical, ProTheme.Spacing.xs)
             .background(ProTheme.Colors.surfaceMedium)
+            .clipShape(RoundedRectangle(cornerRadius: ProTheme.Radius.small))
+            
+            // View Mode Toggle
+            HStack(spacing: 0) {
+                Button { viewMode = .list } label: {
+                    Image(systemName: "list.bullet")
+                        .padding(6)
+                        .background(viewMode == .list ? ProTheme.Colors.surfaceMedium : Color.clear)
+                        .foregroundColor(viewMode == .list ? .white : ProTheme.Colors.textTertiary)
+                }
+                .buttonStyle(.plain)
+                
+                Button { viewMode = .grid } label: {
+                    Image(systemName: "square.grid.2x2")
+                        .padding(6)
+                        .background(viewMode == .grid ? ProTheme.Colors.surfaceMedium : Color.clear)
+                        .foregroundColor(viewMode == .grid ? .white : ProTheme.Colors.textTertiary)
+                }
+                .buttonStyle(.plain)
+            }
+            .background(ProTheme.Colors.surfaceDark)
             .clipShape(RoundedRectangle(cornerRadius: ProTheme.Radius.small))
             
             // Add Music Folder
@@ -156,6 +217,9 @@ struct MusicLibraryView: View {
                     track: track,
                     index: index + 1,
                     isSelected: editingTrack?.id == track.id,
+                    onPlay: {
+                        MusicPlayerEngine.shared.playAll(musicVM.filteredTracks, startingAt: index)
+                    },
                     onEdit: {
                         withAnimation(ProTheme.Animations.smooth) {
                             editingTrack = track
@@ -248,6 +312,7 @@ struct MusicTrackRow: View {
     let track: MusicTrack
     let index: Int
     let isSelected: Bool
+    let onPlay: () -> Void
     let onEdit: () -> Void
     let onRemove: () -> Void
     
@@ -268,6 +333,9 @@ struct MusicTrackRow: View {
                     .opacity(isHovered ? 1 : 0)
             }
             .frame(width: 30, alignment: .leading)
+            .onTapGesture {
+                onPlay()
+            }
             
             // Artwork mini + Title
             HStack(spacing: ProTheme.Spacing.sm) {
@@ -330,8 +398,9 @@ struct MusicTrackRow: View {
         .padding(.vertical, 4)
         .contentShape(Rectangle())
         .onHover { isHovered = $0 }
-        .onTapGesture(count: 2) { onEdit() }
+        .onTapGesture(count: 2) { onPlay() }
         .contextMenu {
+            Button("Play") { onPlay() }
             Button("Edit Tags") { onEdit() }
             Divider()
             Button("Remove from Library") { onRemove() }

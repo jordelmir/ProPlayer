@@ -1,7 +1,7 @@
 import SwiftUI
 import ProPlayerEngine
 
-struct TimelineView: View {
+struct VideoTimelineView: View {
     @ObservedObject var engine: PlayerEngine
     let onSeek: (Double) -> Void
 

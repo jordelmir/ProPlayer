@@ -4,6 +4,7 @@ import AVFoundation
 
 /// PlayerEngineProtocol: Abstract interface for video playback engines.
 /// Enables architectural decoupling and easier Unit Testing for ProPlayer Elite.
+@MainActor
 protocol PlayerEngineProtocol: ObservableObject {
     var isPlaying: Bool { get }
     var currentTime: Double { get }
