@@ -7,7 +7,7 @@ set -euo pipefail
 
 APP_NAME="Elysium Vanguard Pro Player 8K"
 BUNDLE_NAME="${APP_NAME}.app"
-VERSION="16.0"
+VERSION="${VERSION:-16.1}"
 DMG_NAME="ElysiumVanguardPro_${VERSION}_Mac.dmg"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

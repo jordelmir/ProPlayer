@@ -28,9 +28,13 @@ jobs:
         chmod +x create_dmg.sh
       
     - name: Build Application and DMG
-      run: ./build_evp8k.sh
       env:
+        VERSION: ${{ github.ref_name }}
         GITHUB_ACTIONS: true
+      run: |
+        # Strip 'v' from version for internal scripts if needed
+        RAW_VERSION=${VERSION#v}
+        VERSION=$RAW_VERSION ./build_evp8k.sh
         
     - name: Rename Release DMG
       run: |
