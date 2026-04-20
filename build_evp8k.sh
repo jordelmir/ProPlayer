@@ -209,16 +209,20 @@ fi
 echo ""
 
 # ─── Phase 7: Verify Installation ────────────────────────────────
-step "Phase 7: Installation Verification"
-
-if [ -d "${INSTALL_DIR}/${BUNDLE_NAME}" ]; then
-    echo -e "  ${GREEN}✔${NC} Bundle exists:  ${INSTALL_DIR}/${BUNDLE_NAME}"
-    echo -e "  ${GREEN}✔${NC} Executable:     $(ls -lh "${INSTALL_DIR}/${BUNDLE_NAME}/Contents/MacOS/${EXECUTABLE_NAME}" | awk '{print $5}')"
-    echo -e "  ${GREEN}✔${NC} Architecture:   ${ARCH}"
-    echo -e "  ${GREEN}✔${NC} Version:        ${VERSION}"
-    echo -e "  ${GREEN}✔${NC} Bundle ID:      ${BUNDLE_ID}"
+if [ "${GITHUB_ACTIONS:-false}" = "true" ]; then
+    step "Phase 7: Skipping Verification (CI Environment)"
 else
-    fail "Installation verification failed!"
+    step "Phase 7: Installation Verification"
+    
+    if [ -d "${INSTALL_DIR}/${BUNDLE_NAME}" ]; then
+        echo -e "  ${GREEN}✔${NC} Bundle exists:  ${INSTALL_DIR}/${BUNDLE_NAME}"
+        echo -e "  ${GREEN}✔${NC} Executable:     $(ls -lh "${INSTALL_DIR}/${BUNDLE_NAME}/Contents/MacOS/${EXECUTABLE_NAME}" | awk '{print $5}')"
+        echo -e "  ${GREEN}✔${NC} Architecture:   ${ARCH}"
+        echo -e "  ${GREEN}✔${NC} Version:        ${VERSION}"
+        echo -e "  ${GREEN}✔${NC} Bundle ID:      ${BUNDLE_ID}"
+    else
+        fail "Installation verification failed!"
+    fi
 fi
 
 echo ""
