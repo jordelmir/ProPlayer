@@ -154,6 +154,7 @@ extension Notification.Name {
 
 // MARK: - App Delegate & TouchBar Support
 
+@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     let touchBarDelegate = ElysiumTouchBarDelegate()
     

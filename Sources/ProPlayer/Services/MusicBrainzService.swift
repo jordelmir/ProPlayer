@@ -1,6 +1,6 @@
 import Foundation
 
-public struct MusicBrainzResult: Codable {
+public struct MusicBrainzResult: Codable, Sendable {
     public let title: String
     public let artist: String
     public let album: String
@@ -12,7 +12,8 @@ public struct MusicBrainzResult: Codable {
 }
 
 /// Service for fingerprinting audio and retrieving metadata via AcoustID + MusicBrainz
-public final class MusicBrainzService {
+@MainActor
+public final class MusicBrainzService: Sendable {
     public static let shared = MusicBrainzService()
     
     // The user's provided AcoustID API key

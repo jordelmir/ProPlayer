@@ -1,7 +1,7 @@
 import Foundation
 
 /// Represents an audio track with full metadata for the music library.
-public struct MusicTrack: Identifiable, Codable, Hashable {
+public struct MusicTrack: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public let url: URL
     public var title: String

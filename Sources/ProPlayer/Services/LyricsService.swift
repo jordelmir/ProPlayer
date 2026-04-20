@@ -1,13 +1,14 @@
 import Foundation
 
-public struct LyricsResult {
+public struct LyricsResult: Sendable {
     public let plainLyrics: String?
     public let syncedLyrics: String? // LRC format
     public let provider: String
 }
 
 /// Service for fetching lyrics via the free LRCLIB API.
-public final class LyricsService {
+@MainActor
+public final class LyricsService: Sendable {
     public static let shared = LyricsService()
     
     private let urlSession: URLSession
