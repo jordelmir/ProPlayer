@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+  discussions: write
+
 jobs:
   build:
     runs-on: macos-latest
@@ -25,6 +29,8 @@ jobs:
       
     - name: Build Application and DMG
       run: ./build_evp8k.sh
+      env:
+        GITHUB_ACTIONS: true
         
     - name: Rename Release DMG
       run: |
@@ -32,7 +38,7 @@ jobs:
         mv .build/release/ElysiumVanguardPro_${VERSION}_Mac.dmg ElysiumVanguardPro_${VERSION}_Mac.dmg
       
     - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: ElysiumVanguardPro_*_Mac.dmg
         draft: false

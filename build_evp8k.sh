@@ -164,30 +164,38 @@ ok "Bundle size: ${BUNDLE_SIZE}"
 echo ""
 
 # ─── Phase 5: Install to /Applications ───────────────────────────
-step "Phase 5: Installing to ${INSTALL_DIR}"
-
-# Remove old installation if exists
-if [ -d "${INSTALL_DIR}/${BUNDLE_NAME}" ]; then
-    warn "Existing installation found — removing..."
-    rm -rf "${INSTALL_DIR}/${BUNDLE_NAME}" 2>/dev/null || sudo rm -rf "${INSTALL_DIR}/${BUNDLE_NAME}"
+if [ "${GITHUB_ACTIONS:-false}" = "true" ]; then
+    step "Phase 5: Skipping Installation (CI Environment)"
+else
+    step "Phase 5: Installing to ${INSTALL_DIR}"
+    
+    # Remove old installation if exists
+    if [ -d "${INSTALL_DIR}/${BUNDLE_NAME}" ]; then
+        warn "Existing installation found — removing..."
+        rm -rf "${INSTALL_DIR}/${BUNDLE_NAME}" 2>/dev/null || sudo rm -rf "${INSTALL_DIR}/${BUNDLE_NAME}"
+    fi
+    
+    # Copy to Applications
+    cp -R "${APP_BUNDLE}" "${INSTALL_DIR}/" 2>/dev/null || sudo cp -R "${APP_BUNDLE}" "${INSTALL_DIR}/"
+    ok "Installed to ${INSTALL_DIR}/${BUNDLE_NAME}"
 fi
-
-# Copy to Applications
-cp -R "${APP_BUNDLE}" "${INSTALL_DIR}/" 2>/dev/null || sudo cp -R "${APP_BUNDLE}" "${INSTALL_DIR}/"
-ok "Installed to ${INSTALL_DIR}/${BUNDLE_NAME}"
 
 echo ""
 
 # ─── Phase 6: Register with Launch Services ──────────────────────
-step "Phase 6: Registering with macOS Launch Services"
-
-LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister"
-
-if [ -x "${LSREGISTER}" ]; then
-    "${LSREGISTER}" -f "${INSTALL_DIR}/${BUNDLE_NAME}"
-    ok "Registered — visible in Finder & Launchpad"
+if [ "${GITHUB_ACTIONS:-false}" = "true" ]; then
+    step "Phase 6: Skipping Registration (CI Environment)"
 else
-    warn "lsregister not found — app will register on first launch"
+    step "Phase 6: Registering with macOS Launch Services"
+    
+    LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister"
+    
+    if [ -x "${LSREGISTER}" ]; then
+        "${LSREGISTER}" -f "${INSTALL_DIR}/${BUNDLE_NAME}"
+        ok "Registered — visible in Finder & Launchpad"
+    else
+        warn "lsregister not found — app will register on first launch"
+    fi
 fi
 
 echo ""
