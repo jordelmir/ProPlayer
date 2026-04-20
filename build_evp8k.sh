@@ -77,7 +77,15 @@ echo ""
 
 # ─── Phase 2: Release Build ──────────────────────────────────────
 step "Phase 2: Release Build (optimized for Apple Silicon)"
-swift build -c release --product "${PRODUCT_NAME}" 2>&1
+
+# BUILD WORKAROUND: In CI, we disable debug info to bypass a known Swift 6.0.3 compiler crash (Signal 6) in IRGen
+CI_FLAGS=""
+if [ "${GITHUB_ACTIONS:-false}" = "true" ]; then
+    CI_FLAGS="-Xswiftc -gnone"
+    step "Applying Swift Compiler Workaround (-gnone) for CI"
+fi
+
+swift build -c release --product "${PRODUCT_NAME}" ${CI_FLAGS} 2>&1
 
 if [ ! -f "${RELEASE_BIN}" ]; then
     fail "Build failed — binary not found at ${RELEASE_BIN}"
