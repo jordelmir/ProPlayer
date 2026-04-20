@@ -18,7 +18,7 @@ BUNDLE_NAME="${APP_NAME}.app"
 EXECUTABLE_NAME="ElysiumVanguardProPlayer8K"
 PRODUCT_NAME="ProPlayer"                       # SPM executable target
 BUNDLE_ID="com.jordelmir.ElysiumVanguardProPlayer8K"
-VERSION="16.0"
+VERSION="16.1"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${SCRIPT_DIR}/.build"
