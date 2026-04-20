@@ -7,7 +7,7 @@ struct BreathingLogoView: View {
     @State private var isBreathing = false
     
     var body: some View {
-        if let nsImage = NSImage(contentsOfFile: Bundle.module.path(forResource: "ElysiumLogo", ofType: "png") ?? "") {
+        if let nsImage = NSImage(contentsOfFile: Bundle.proPlayerApp.path(forResource: "ElysiumLogo", ofType: "png") ?? "") {
             Image(nsImage: nsImage)
                 .resizable()
                 .scaledToFit()

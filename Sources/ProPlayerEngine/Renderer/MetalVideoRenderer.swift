@@ -81,7 +81,7 @@ public final class MetalVideoRenderer: NSObject, MTKViewDelegate {
     private var computePipelineState: MTLComputePipelineState? 
     
     private func setupPipeline() {
-        let bundle = Bundle.module
+        let bundle = Bundle.proPlayerEngine
         var library: MTLLibrary?
         
         print("[MetalVideoRenderer] Loading library from bundle: \(bundle.bundlePath)")

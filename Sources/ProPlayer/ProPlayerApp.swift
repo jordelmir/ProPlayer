@@ -163,4 +163,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NSApplication.shared.touchBar = touchBarDelegate.makeTouchBar()
         }
     }
+    
+    // Disable state restoration to prevent "Reopen windows" loops after crashes
+    func applicationShouldRestoreState(_ app: NSApplication) -> Bool {
+        return false
+    }
+    
+    // Ensure we also support secure state but don't actually use it for restoration
+    func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
+        return true
+    }
 }
