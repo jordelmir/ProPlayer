@@ -55,4 +55,19 @@ Master these shortcuts for a keyboard-driven workflow:
 
 ---
 
+## 🛠️ Troubleshooting
+
+### "App is damaged and can't be opened"
+If you receive this error after downloading the DMG from GitHub, macOS Gatekeeper is blocking the app because it lacks a paid Apple Developer signature. It is **not** actually damaged.
+
+**Solution:**
+1. Move the app to your **Applications** folder.
+2. Open **Terminal** and run:
+   ```bash
+   sudo xattr -cr "/Applications/Elysium Vanguard Pro Player 8K.app"
+   ```
+3. Enter your Mac password. You can now launch the app normally.
+
+---
+
 *ProPlayer Elite v13.0 - Designed for those who see the difference.*

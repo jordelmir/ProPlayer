@@ -48,6 +48,18 @@ sh build_evp8k.sh
 ### Download DMG
 Ready-to-use distribution images are available under [Releases](https://github.com/jordelmir/ElysiumVanguard8K/releases).
 
+### 🛠️ Troubleshooting: "App is damaged" error
+If you download the `.dmg` from GitHub and macOS shows an error saying *"Elysium Vanguard Pro Player 8K is damaged and can't be opened. You should move it to the Trash."*, this is a standard macOS Gatekeeper security feature for apps not signed with an Apple Developer account, **not** actual file corruption.
+
+To fix this and allow the app to run:
+1. Move the app to your **Applications** folder.
+2. Open **Terminal** (`Cmd + Space` -> Terminal).
+3. Run the following command to remove the Apple quarantine attribute:
+   ```bash
+   sudo xattr -cr "/Applications/Elysium Vanguard Pro Player 8K.app"
+   ```
+4. Enter your Mac password when prompted. The app will now open normally.
+
 ---
 
 ## ⌨️ Professional Controls
